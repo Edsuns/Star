@@ -1,0 +1,3 @@
+rootProject.name = "Star"
+include ':app'
+include ':chaoxing'
