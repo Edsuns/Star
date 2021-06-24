@@ -5,9 +5,15 @@ import com.sun.tools.javac.util.Pair;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import io.github.edsuns.chaoxing.model.Course;
+import io.github.edsuns.chaoxing.model.Timing;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -18,6 +24,8 @@ public class RemoteTest {
     String password;
     String schoolId;
 
+    Map<String, String> cookies;
+
     {
         try {
             // load config from config.properties
@@ -26,14 +34,42 @@ public class RemoteTest {
             username = properties.getProperty("username");
             password = properties.getProperty("password");
             schoolId = properties.getProperty("schoolId");
+
+            // login
+            Pair<Remote.State, Map<String, String>> result = Remote.login(username, password, schoolId);
+            assertNotNull(result.snd);
+            cookies = result.snd;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void login() throws IOException {
-        Pair<Remote.State, Map<String, String>> result = Remote.login(username, password, schoolId);
-        assertTrue(Remote.validateLogin(result.snd));
+    public void validateLogin() throws IOException {
+        assertTrue(Remote.validateLogin(cookies));
+    }
+
+    @Test
+    public void getAllCourses() throws IOException {
+        List<Course> allCourses = Remote.getAllCourses(cookies);
+        assertFalse(allCourses.isEmpty());
+    }
+
+    @Test
+    public void getActiveTimingList() throws IOException {
+        List<Course> allCourses = Remote.getAllCourses(cookies);
+        boolean hasActive = false;
+        outer:
+        for (Course course : allCourses) {
+            List<Timing> activeTimingList = Remote.getActiveTimingList(cookies, course);
+            for (Timing timing : activeTimingList) {
+                if (timing.state != Timing.State.UNKNOWN
+                        && timing.type != Timing.Type.UNKNOWN) {
+                    hasActive = true;
+                    break outer;
+                }
+            }
+        }
+        assertTrue(hasActive);
     }
 }

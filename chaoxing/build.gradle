@@ -15,6 +15,7 @@ repositories {
 dependencies {
     testImplementation 'junit:junit:4.13.2'
 
-    implementation 'com.github.Edsuns:HttpRequest:0.2'
+    implementation 'org.jsoup:jsoup:1.13.1'
+
     implementation 'org.json:json:20210307'
 }
