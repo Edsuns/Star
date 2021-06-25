@@ -5,11 +5,13 @@ import com.sun.tools.javac.util.Pair;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.Map;
 
 import io.github.edsuns.chaoxing.model.Course;
 import io.github.edsuns.chaoxing.model.Timing;
+import jdk.internal.jline.internal.Nullable;
 
 /**
  * Created by Edsuns@qq.com on 2021/6/23.
@@ -46,7 +49,7 @@ final class Remote {
                 .data("name", username)
                 .data("pwd", password)
                 .data("schoolid", schoolId)
-                .data("verify", String.valueOf(0))
+                .data("verify", "0")
                 .execute();
         JSONObject object = new JSONObject(response.body());
         if (response.statusCode() == HttpURLConnection.HTTP_OK && object.getBoolean("result")) {
@@ -146,5 +149,192 @@ final class Remote {
             activeTimingList.add(timing);
         }
         return activeTimingList;
+    }
+
+    /**
+     * PhotoTiming
+     *
+     * @param cookies     cookies
+     * @param timing      timing
+     * @param inputStream inputStream of the photo
+     * @return null if failed to do timing
+     * @throws IOException IOException
+     */
+    @Nullable
+    static String normalOrPhotoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
+        if (timing.type != Timing.Type.NORMAL_OR_PHOTO) {
+            throw new IllegalArgumentException("Mismatched Timing!");
+        }
+        Document document =
+                Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/preSign")
+                        .cookies(cookies)
+                        .data("courseId", timing.course.id)
+                        .data("classId", timing.course.classId)
+                        .data("activeId", timing.activeId)
+                        .data("fid", "39037").get();
+        if (document.title().contains("签到成功")) {
+            return "";// it is normal timing
+        }
+        // photo timing
+        String objectId = uploadImage(cookies, inputStream);
+        Connection.Response response =
+                Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+                        .data("name", "")
+                        .data("", timing.activeId)
+                        .data("address", "中国")
+                        .data("uid", "")
+                        .data("fid", "")
+                        .data("appType", "15")
+                        .data("ifTiJiao", "1")
+                        .data("objectId", objectId)
+                        .execute();
+        String text = response.body();
+        if (text.contains("success")) {
+            return text;// example: {"name": "", "date": "01-01 16:26", "status": "success"}
+        }
+        return null;
+    }
+
+    /**
+     * QRCodeTiming
+     *
+     * @param cookies cookies
+     * @param timing  timing
+     * @param enc     extracted from a timing QRCode which is allowed to be expired
+     * @return null if failed to do timing
+     * @throws IOException IOException
+     */
+    @Nullable
+    static String qrcodeTiming(Map<String, String> cookies, Timing timing, String enc) throws IOException {
+        if (timing.type != Timing.Type.QRCODE) {
+            throw new IllegalArgumentException("Mismatched Timing!");
+        }
+        Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+                .cookies(cookies)
+                .data("enc", enc)
+                .data("name", timing.course.name)
+                .data("activeId", timing.activeId)
+                .data("uid", "")
+                .data("clientip", "")
+                .data("useragent", HttpConnection.DEFAULT_UA)
+                .data("latitude", "-1")
+                .data("longitude", "-1")
+                .data("fid", "")
+                .data("appType", "15")
+                .execute();
+        String text = response.body();
+        if (text.contains("success")) {
+            return text;// example: {"name": "", "date": "01-01 16:26", "status": "success"}
+        }
+        return null;
+    }
+
+    /**
+     * GestureTiming
+     *
+     * @param cookies cookies
+     * @param timing  timing
+     * @return true if success
+     * @throws IOException IOException
+     */
+    static boolean gestureTiming(Map<String, String> cookies, Timing timing) throws IOException {
+        if (timing.type != Timing.Type.GESTURE) {
+            throw new IllegalArgumentException("Mismatched Timing!");
+        }
+        Document document =
+                Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/signIn")
+                        .cookies(cookies)
+                        .data("courseId", timing.course.id)
+                        .data("classId", timing.course.classId)
+                        .data("activeId", timing.activeId)
+                        .get();
+        return document.title().contains("签到成功");
+    }
+
+    /**
+     * LocationTiming
+     *
+     * @param cookies   cookies
+     * @param timing    timing
+     * @param address   address name displayed on the screen
+     * @param latitude  latitude
+     * @param longitude longitude
+     * @return null if failed to do timing
+     * @throws IOException IOException
+     */
+    @Nullable
+    static String locationTiming(Map<String, String> cookies,
+                                 Timing timing, String address,
+                                 @Nullable String latitude, @Nullable String longitude) throws IOException {
+        if (timing.type != Timing.Type.LOCATION) {
+            throw new IllegalArgumentException("Mismatched Timing!");
+        }
+        if (latitude == null) {
+            latitude = "-1";
+        }
+        if (longitude == null) {
+            longitude = "-1";
+        }
+        Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
+                .cookies(cookies)
+                .data("name", timing.course.name)
+                .data("activeId", timing.activeId)
+                .data("address", address)
+                .data("uid", "")
+                .data("clientip", "")
+                .data("useragent", HttpConnection.DEFAULT_UA)
+                .data("latitude", latitude)
+                .data("longitude", longitude)
+                .data("fid", "")
+                .data("appType", "15")
+                .data("ifTiJiao", "1")
+                .execute();
+        String text = response.body();
+        if (text.contains("success")) {
+            return text;// example: {"name": "", "date": "01-01 16:26", "status": "success"}
+        }
+        return null;
+    }
+
+    /**
+     * Get the token for uploading
+     *
+     * @param cookies cookies
+     * @return token
+     * @throws IOException IOException
+     */
+    @Nullable
+    private static String getToken(Map<String, String> cookies) throws IOException {
+        Connection.Response response =
+                Jsoup.connect("https://pan-yz.chaoxing.com/api/token/uservalid")
+                        .cookies(cookies)
+                        .execute();
+        JSONObject object = new JSONObject(response.body());
+        if (object.getBoolean("result")) {
+            return object.getString("_token");
+        }
+        return null;
+    }
+
+    /**
+     * Upload an image
+     *
+     * @param cookies     cookies
+     * @param inputStream inputStream of the image
+     * @return objectId
+     * @throws IOException IOException
+     */
+    private static String uploadImage(Map<String, String> cookies, InputStream inputStream) throws IOException {
+        final String token = getToken(cookies);
+        final String uid = cookies.get("UID");
+        Connection.Response response = Jsoup.connect("https://pan-yz.chaoxing.com/upload")
+                .method(Connection.Method.POST)
+                .cookies(cookies)
+                .data("puid", uid)
+                .data("_token", token)
+                .data("file", "", inputStream, "image/webp,image/*")
+                .execute();
+        JSONObject object = new JSONObject(response.body());
+        return object.getString("objectId");
     }
 }

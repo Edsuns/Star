@@ -5,7 +5,7 @@ package io.github.edsuns.chaoxing.model;
  */
 public class Timing {
     public enum Type {
-        UNKNOWN("error"), NORMAL("签到"), QRCODE("二维码签到"), LOCATION("位置签到"), GESTURE("手势签到"), PHOTO("签到");
+        UNKNOWN("error"), NORMAL_OR_PHOTO("签到"), QRCODE("二维码签到"), LOCATION("位置签到"), GESTURE("手势签到");
 
         final String description;
 
@@ -14,6 +14,9 @@ public class Timing {
         }
 
         public static Type valueFrom(String description) {
+            if (NORMAL_OR_PHOTO.description.equals(description)) {
+                return NORMAL_OR_PHOTO;
+            }
             if (QRCODE.description.equals(description)) {
                 return QRCODE;
             }
