@@ -1,7 +1,5 @@
 package io.github.edsuns.chaoxing;
 
-import com.sun.tools.javac.util.Pair;
-
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,9 +34,9 @@ public class RemoteTest {
             schoolId = properties.getProperty("schoolId");
 
             // login
-            Pair<Remote.State, Map<String, String>> result = Remote.login(username, password, schoolId);
-            assertNotNull(result.snd);
-            cookies = result.snd;
+            Map<String, String> result = Remote.login(username, password, schoolId);
+            assertNotNull(result);
+            cookies = result;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

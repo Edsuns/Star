@@ -1,7 +1,5 @@
 package io.github.edsuns.chaoxing;
 
-import com.sun.tools.javac.util.Pair;
-
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -29,22 +27,15 @@ final class Remote {
     }
 
     /**
-     * API response state
-     */
-    enum State {
-        LOGIN_SUCCESS, LOGIN_FAILED
-    }
-
-    /**
      * Login
      *
      * @param username phone number or schoolId
      * @param password password
      * @param schoolId can be empty if login with phone number
-     * @return a pair of {@link Remote.State} and cookies
+     * @return cookies, null if login failed
      * @throws IOException IOException
      */
-    static Pair<State, Map<String, String>> login(String username, String password, String schoolId) throws IOException {
+    static Map<String, String> login(String username, String password, String schoolId) throws IOException {
         Connection.Response response = Jsoup.connect("https://passport2.chaoxing.com/api/login")
                 .data("name", username)
                 .data("pwd", password)
@@ -53,9 +44,9 @@ final class Remote {
                 .execute();
         JSONObject object = new JSONObject(response.body());
         if (response.statusCode() == HttpURLConnection.HTTP_OK && object.getBoolean("result")) {
-            return Pair.of(State.LOGIN_SUCCESS, response.cookies());
+            return response.cookies();
         }
-        return Pair.of(State.LOGIN_FAILED, null);
+        return null;
     }
 
     /**
@@ -152,16 +143,14 @@ final class Remote {
     }
 
     /**
-     * PhotoTiming
+     * NormalTiming
      *
-     * @param cookies     cookies
-     * @param timing      timing
-     * @param inputStream inputStream of the photo
-     * @return null if failed to do timing
+     * @param cookies cookies
+     * @param timing  timing
+     * @return true if do timing successfully
      * @throws IOException IOException
      */
-    @Nullable
-    static String normalOrPhotoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
+    static boolean normalTiming(Map<String, String> cookies, Timing timing) throws IOException {
         if (timing.type != Timing.Type.NORMAL_OR_PHOTO) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
@@ -172,15 +161,25 @@ final class Remote {
                         .data("classId", timing.course.classId)
                         .data("activeId", timing.activeId)
                         .data("fid", "39037").get();
-        if (document.title().contains("签到成功")) {
-            return "";// it is normal timing
-        }
-        // photo timing
+        return document.title().contains("签到成功");
+    }
+
+    /**
+     * PhotoTiming
+     *
+     * @param cookies     cookies
+     * @param timing      timing
+     * @param inputStream inputStream of the photo
+     * @return null if failed to do timing
+     * @throws IOException IOException
+     */
+    @Nullable
+    static String photoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
         String objectId = uploadImage(cookies, inputStream);
         Connection.Response response =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                         .data("name", "")
-                        .data("", timing.activeId)
+                        .data("activeId", timing.activeId)
                         .data("address", "中国")
                         .data("uid", "")
                         .data("fid", "")
