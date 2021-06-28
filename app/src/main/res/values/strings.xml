@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Star</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="dismiss">DISMISS</string>
+    <string name="back">Back</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="checked">Checked</string>
+    <string name="unchecked">Unchecked</string>
+    <string name="about">About</string>
+    <string name="logout">Logout</string>
+    <string name="network_error">Network error!</string>
+    <string name="retry">Retry</string>
+    <string name="tap_to_load">Tap to load content</string>
 </resources>
