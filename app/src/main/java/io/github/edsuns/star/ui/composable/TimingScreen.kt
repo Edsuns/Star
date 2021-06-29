@@ -21,37 +21,58 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import io.github.edsuns.chaoxing.model.Timing
 import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
-import io.github.edsuns.star.ext.copy
+import io.github.edsuns.star.ext.BLANK_TIMING
 import io.github.edsuns.star.ui.MainViewModel
 import io.github.edsuns.star.util.UiState
 import io.github.edsuns.star.util.produceUiState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 
 /**
  * Created by Edsuns@qq.com on 2021/6/27.
  */
 
+@ExperimentalMaterialApi
 @Composable
 fun TimingScreen(
     onLogoutClicked: (LoginEvent) -> Unit,
     scaffoldState: ScaffoldState = rememberScaffoldState()
 ) {
+    val selectedTiming = remember {
+        mutableStateOf(mutableStateOf(BLANK_TIMING))
+    }
+    val modalBottomSheetState = rememberModalBottomSheetState(
+        initialValue = ModalBottomSheetValue.Hidden
+    )
+    val coroutineScope = rememberCoroutineScope()
+
     val (postUiState, refreshPost, clearError) = produceUiState(Repository) {
         fetchAllActiveTiming()
     }
 
     val viewModel = viewModel(MainViewModel::class.java)
 
-    TimingScreenContent(
-        timings = postUiState.value,
-        onRefreshTimings = refreshPost,
-        onErrorDismiss = clearError,
-        onLogoutClicked,
-        viewModel,
-        scaffoldState,
-    )
+    SignTimingBottomSheet(
+        selectedTiming = selectedTiming,
+        sheetState = modalBottomSheetState,
+        coroutineScope = coroutineScope
+    ) {
+        TimingScreenContent(
+            timings = postUiState.value,
+            onRefreshTimings = refreshPost,
+            onErrorDismiss = clearError,
+            onLogoutClicked = onLogoutClicked,
+            viewModel = viewModel,
+            selectedTiming = selectedTiming,
+            scaffoldState = scaffoldState,
+            coroutineScope = coroutineScope,
+            modalBottomSheetState = modalBottomSheetState
+        )
+    }
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun TimingScreenContent(
     timings: UiState<List<Timing>>,
@@ -59,7 +80,10 @@ fun TimingScreenContent(
     onErrorDismiss: () -> Unit,
     onLogoutClicked: (LoginEvent) -> Unit,
     viewModel: MainViewModel,
-    scaffoldState: ScaffoldState
+    selectedTiming: MutableState<MutableState<Timing>>,
+    scaffoldState: ScaffoldState,
+    coroutineScope: CoroutineScope,
+    modalBottomSheetState: ModalBottomSheetState
 ) {
     if (timings.hasError) {
         NetworkErrorSnackbar(
@@ -104,7 +128,13 @@ fun TimingScreenContent(
             loading = timings.loading,
             onRefresh = onRefreshTimings,
             content = {
-                ActiveTimingList(data = timings.data!!, modifier = modifier.fillMaxSize())
+                ActiveTimingList(
+                    data = timings.data!!,
+                    modifier = modifier.fillMaxSize(),
+                    selectedTiming = selectedTiming,
+                    coroutineScope = coroutineScope,
+                    modalBottomSheetState = modalBottomSheetState
+                )
             }
         )
     }
@@ -139,10 +169,14 @@ fun NetworkErrorSnackbar(
     }
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun ActiveTimingList(
     data: List<Timing>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedTiming: MutableState<MutableState<Timing>>,
+    coroutineScope: CoroutineScope,
+    modalBottomSheetState: ModalBottomSheetState
 ) {
     LazyColumn(modifier = modifier) {
         items(data.size) { index ->
@@ -150,17 +184,11 @@ fun ActiveTimingList(
             val timingState = remember(item.activeId, item.course.id, item.course.classId) {
                 mutableStateOf(item)
             }
-            val (clickUiState, refreshPost, clearError) = produceUiState(
-                Repository,
-                timingState.value
-            ) {
-                onTimingClicked(timingState.value)
-            }
 
             val onClickHandle: () -> Unit = {
-                val uiState = clickUiState.value
-                if (uiState.data == true) {
-                    timingState.value = timingState.value.copy(Timing.State.SUCCESS)
+                selectedTiming.value = timingState
+                coroutineScope.launch {
+                    modalBottomSheetState.show()
                 }
             }
 

@@ -14,4 +14,6 @@
     <string name="network_error">Network error!</string>
     <string name="retry">Retry</string>
     <string name="nothing_found">Nothing found.</string>
+    <string name="signed">Signed</string>
+    <string name="sign">Sign</string>
 </resources>
