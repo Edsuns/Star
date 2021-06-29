@@ -38,31 +38,37 @@ object Repository {
         return false
     }
 
-    @Throws(IOException::class)
-    suspend fun fetchAllActiveTiming(): Result<List<Timing>> = withContext(Dispatchers.IO) {
-        val activeTimingList = mutableListOf<Timing>()
-        val allCourses = xing.allCourses
-        val taskList = mutableListOf<Deferred<List<Timing>>>()
-        for (course in allCourses) {
-            taskList.add(async { xing.getActiveTimingList(course) })
+    suspend fun fetchAllActiveTiming(): Result<List<Timing>> = try {
+        withContext(Dispatchers.IO) {
+            val activeTimingList = mutableListOf<Timing>()
+            val allCourses = xing.allCourses
+            val taskList = mutableListOf<Deferred<List<Timing>>>()
+            for (course in allCourses) {
+                taskList.add(async { xing.getActiveTimingList(course) })
+            }
+            for (task in taskList) {
+                activeTimingList.addAll(task.await())
+            }
+            return@withContext Result.Success(activeTimingList)
         }
-        for (task in taskList) {
-            activeTimingList.addAll(task.await())
-        }
-        return@withContext Result.Success(activeTimingList)
+    } catch (err: IOException) {
+        logE("FetchAllActiveTiming", err)
+        Result.Error(err)
     }
 
-    @Throws(IOException::class)
-    suspend fun onTimingClicked(timing: Timing, timingConfig: TimingConfig? = null): Boolean =
+    suspend fun onTimingClicked(
+        timing: Timing,
+        timingConfig: TimingConfig? = null
+    ): Result<Boolean> = try {
         withContext(Dispatchers.IO) {
             if (timing.state == Timing.State.SUCCESS) {
-                return@withContext false
+                return@withContext Result.Success(false)
             }
 //            if (timing.type == Timing.Type.QRCODE) {
 //                return@withContext xing.qrcodeTiming(timing, timingConfig!!.enc)
 //            }
             if (timing.type == Timing.Type.GESTURE) {
-                return@withContext xing.gestureTiming(timing)
+                return@withContext Result.Success(xing.gestureTiming(timing))
             }
 //            if (timing.type == Timing.Type.LOCATION) {
 //                return@withContext xing.locationTiming(timing, timingConfig!!.address, null, null)
@@ -70,27 +76,30 @@ object Repository {
 //            if (timing.type == Timing.Type.NORMAL_OR_PHOTO) {
 //                return@withContext xing.normalOrPhotoTiming(timing, timingConfig!!.photoProvider!!)
 //            }
-            return@withContext false
+            return@withContext Result.Success(false)
         }
+    } catch (err: IOException) {
+        logE("FetchAllActiveTiming", err)
+        Result.Error(err)
+    }
 
-    suspend fun login(username: String, password: String): Result<Boolean> =
+    suspend fun login(username: String, password: String): Result<Boolean> = try {
         withContext(Dispatchers.IO) {
             if (username.isEmpty() || password.isEmpty()) {
                 return@withContext Result.Success(false)
             }
-            try {
-                val remote = CXing(username, cookieStorage)
-                val valid = remote.login(password)
-                if (valid) {
-                    SettingsStorage.username = username
-                    _xing = remote
-                }
-                return@withContext Result.Success(valid)
-            } catch (err: IOException) {
-                logE("Login", err)
-                return@withContext Result.Error(err)
+            val remote = CXing(username, cookieStorage)
+            val valid = remote.login(password)
+            if (valid) {
+                SettingsStorage.username = username
+                _xing = remote
             }
+            return@withContext Result.Success(valid)
         }
+    } catch (err: IOException) {
+        logE("Login", err)
+        Result.Error(err)
+    }
 
     suspend fun logout() = withContext(Dispatchers.IO) {
         _xing = null

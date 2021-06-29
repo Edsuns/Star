@@ -21,11 +21,10 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import io.github.edsuns.chaoxing.model.Timing
 import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
+import io.github.edsuns.star.ext.copy
 import io.github.edsuns.star.ui.MainViewModel
-import io.github.edsuns.star.util.Result
+import io.github.edsuns.star.util.UiState
 import io.github.edsuns.star.util.produceUiState
-import kotlinx.coroutines.launch
-import java.io.IOException
 
 
 /**
@@ -38,41 +37,37 @@ fun TimingScreen(
     scaffoldState: ScaffoldState = rememberScaffoldState()
 ) {
     val (postUiState, refreshPost, clearError) = produceUiState(Repository) {
-        try {
-            fetchAllActiveTiming()
-        } catch (err: IOException) {
-            Result.Error(err)
-        }
-    }
-
-    val data = postUiState.value.data
-    val hasData = data != null && data.isNotEmpty()
-    val hasErr = postUiState.value.hasError
-    if (hasErr) {
-        val errorMessage = stringResource(id = R.string.network_error)
-        val retryMessage = stringResource(id = R.string.retry)
-
-        // If onRefreshPosts or onErrorDismiss change while the LaunchedEffect is running,
-        // don't restart the effect and use the latest lambda values.
-        val onRefreshPostsState by rememberUpdatedState(refreshPost)
-        val onErrorDismissState by rememberUpdatedState(clearError)
-
-        // Show snackbar using a coroutine, when the coroutine is cancelled the snackbar will
-        // automatically dismiss. This coroutine will cancel whenever posts.hasError is false
-        // (thanks to the surrounding if statement) or if scaffoldState.snackbarHostState changes.
-        LaunchedEffect(scaffoldState.snackbarHostState) {
-            val snackbarResult = scaffoldState.snackbarHostState.showSnackbar(
-                message = errorMessage,
-                actionLabel = retryMessage
-            )
-            when (snackbarResult) {
-                SnackbarResult.ActionPerformed -> onRefreshPostsState()
-                SnackbarResult.Dismissed -> onErrorDismissState()
-            }
-        }
+        fetchAllActiveTiming()
     }
 
     val viewModel = viewModel(MainViewModel::class.java)
+
+    TimingScreenContent(
+        timings = postUiState.value,
+        onRefreshTimings = refreshPost,
+        onErrorDismiss = clearError,
+        onLogoutClicked,
+        viewModel,
+        scaffoldState,
+    )
+}
+
+@Composable
+fun TimingScreenContent(
+    timings: UiState<List<Timing>>,
+    onRefreshTimings: () -> Unit,
+    onErrorDismiss: () -> Unit,
+    onLogoutClicked: (LoginEvent) -> Unit,
+    viewModel: MainViewModel,
+    scaffoldState: ScaffoldState
+) {
+    if (timings.hasError) {
+        NetworkErrorSnackbar(
+            onRefresh = onRefreshTimings,
+            onClearError = onErrorDismiss,
+            scaffoldState
+        )
+    }
 
     Scaffold(
         scaffoldState = scaffoldState,
@@ -86,54 +81,92 @@ fun TimingScreen(
     ) { innerPadding ->
         val modifier = Modifier.padding(innerPadding)
         LoadingContent(
-            empty = !hasData,
+            empty = timings.data == null || timings.data.isEmpty(),
             emptyContent = {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (postUiState.value.loading) {
+                    if (timings.loading) {
                         CircularProgressIndicator()
                     } else {
                         // if there are no posts, and no error, let the user refresh manually
-                        TextButton(onClick = refreshPost, Modifier.fillMaxSize()) {
-                            Text(stringResource(R.string.tap_to_load), textAlign = TextAlign.Center)
+                        TextButton(onClick = onRefreshTimings, Modifier.fillMaxSize()) {
+                            Text(
+                                stringResource(R.string.nothing_found),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
             },
-            loading = postUiState.value.loading,
-            onRefresh = refreshPost,
+            loading = timings.loading,
+            onRefresh = onRefreshTimings,
             content = {
-                ActiveTimingList(
-                    onRefresh = refreshPost, data = data!!, modifier = modifier.fillMaxSize()
-                )
+                ActiveTimingList(data = timings.data!!, modifier = modifier.fillMaxSize())
             }
         )
     }
 }
 
 @Composable
-fun ActiveTimingList(
+fun NetworkErrorSnackbar(
     onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+    scaffoldState: ScaffoldState
+) {
+    val errorMessage = stringResource(id = R.string.network_error)
+    val retryMessage = stringResource(id = R.string.retry)
+
+    // If onRefreshPosts or onErrorDismiss change while the LaunchedEffect is running,
+    // don't restart the effect and use the latest lambda values.
+    val onRefreshPostsState by rememberUpdatedState(onRefresh)
+    val onErrorDismissState by rememberUpdatedState(onClearError)
+
+    // Show snackbar using a coroutine, when the coroutine is cancelled the snackbar will
+    // automatically dismiss. This coroutine will cancel whenever posts.hasError is false
+    // (thanks to the surrounding if statement) or if scaffoldState.snackbarHostState changes.
+    LaunchedEffect(scaffoldState.snackbarHostState) {
+        val snackbarResult = scaffoldState.snackbarHostState.showSnackbar(
+            message = errorMessage,
+            actionLabel = retryMessage
+        )
+        when (snackbarResult) {
+            SnackbarResult.ActionPerformed -> onRefreshPostsState()
+            SnackbarResult.Dismissed -> onErrorDismissState()
+        }
+    }
+}
+
+@Composable
+fun ActiveTimingList(
     data: List<Timing>,
     modifier: Modifier = Modifier
 ) {
-    val coroutineScope = rememberCoroutineScope()
     LazyColumn(modifier = modifier) {
         items(data.size) { index ->
-            val timing = data[index]
+            val item = data[index]
+            val timingState = remember(item.activeId, item.course.id, item.course.classId) {
+                mutableStateOf(item)
+            }
+            val (clickUiState, refreshPost, clearError) = produceUiState(
+                Repository,
+                timingState.value
+            ) {
+                onTimingClicked(timingState.value)
+            }
+
             val onClickHandle: () -> Unit = {
-                coroutineScope.launch {
-                    if (Repository.onTimingClicked(timing)) {
-                        // TODO modify timing data directly instead of refresh
-                        onRefresh()
-                    }
+                val uiState = clickUiState.value
+                if (uiState.data == true) {
+                    timingState.value = timingState.value.copy(Timing.State.SUCCESS)
                 }
             }
-            val optionSelected = timing.state == Timing.State.SUCCESS
-            val answerBackgroundColor = if (optionSelected) {
+
+            val timing = timingState.value
+            val isChecked = timing.state == Timing.State.SUCCESS
+            val answerBackgroundColor = if (isChecked) {
                 MaterialTheme.colors.primary.copy(alpha = 0.12f)
             } else {
                 MaterialTheme.colors.background
@@ -142,7 +175,7 @@ fun ActiveTimingList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .selectable(
-                        selected = optionSelected,
+                        selected = isChecked,
                         onClick = onClickHandle
                     )
                     .background(answerBackgroundColor)
@@ -162,18 +195,14 @@ fun ActiveTimingList(
                     )
                 }
                 CheckboxIconButton(
-                    isChecked = optionSelected,
+                    isChecked = isChecked,
                     onClick = onClickHandle
                 )
             }
-            PostListDivider()
         }
     }
 }
 
-/**
- * Full-width divider with padding for [PostList]
- */
 @Composable
 private fun PostListDivider() {
     Divider(
