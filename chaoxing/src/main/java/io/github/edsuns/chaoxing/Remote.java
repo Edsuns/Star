@@ -1,7 +1,5 @@
 package io.github.edsuns.chaoxing;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -16,6 +14,8 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import io.github.edsuns.chaoxing.model.Course;
 import io.github.edsuns.chaoxing.model.Timing;
@@ -37,8 +37,7 @@ final class Remote {
      * @throws IOException IOException
      */
     @Nullable
-    static Map<String, String> login(@NotNull String username,
-                                     @NotNull String password, @NotNull String schoolId) throws IOException {
+    static Map<String, String> login(String username, String password, String schoolId) throws IOException {
         Connection.Response response = Jsoup.connect("https://passport2.chaoxing.com/api/login")
                 .data("name", username)
                 .data("pwd", password)
@@ -59,7 +58,7 @@ final class Remote {
      * @return true if cookies is valid
      * @throws IOException IOException
      */
-    static boolean validateLogin(@NotNull Map<String, String> cookies) throws IOException {
+    static boolean validateLogin(Map<String, String> cookies) throws IOException {
         Connection.Response response =
                 Jsoup.connect("http://mooc1-1.chaoxing.com/api/workTestPendingNew")
                         .cookies(cookies)
@@ -75,8 +74,7 @@ final class Remote {
      * @return a list of {@link Course}
      * @throws IOException IOException
      */
-    @NotNull
-    static List<Course> getAllCourses(@NotNull Map<String, String> cookies) throws IOException {
+    static List<Course> getAllCourses(Map<String, String> cookies) throws IOException {
         Document document = Jsoup.connect("http://mooc1-2.chaoxing.com/visit/interaction")
                 .cookies(cookies)
                 .get();
@@ -96,9 +94,7 @@ final class Remote {
         return courses;
     }
 
-    @NotNull
-    private static String getTimingState(@NotNull Map<String, String> cookies,
-                                         @NotNull Course course, @NotNull String activeId) throws IOException {
+    private static String getTimingState(Map<String, String> cookies, Course course, String activeId) throws IOException {
         Document document =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/preSign")
                         .cookies(cookies)
@@ -124,9 +120,7 @@ final class Remote {
      * @return a list of {@link Timing}
      * @throws IOException IOException
      */
-    @NotNull
-    static List<Timing> getActiveTimingList(@NotNull Map<String, String> cookies,
-                                            @NotNull Course course) throws IOException {
+    static List<Timing> getActiveTimingList(Map<String, String> cookies, Course course) throws IOException {
         Document document =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/widget/pcpick/stu/index")
                         .cookies(cookies)
@@ -158,7 +152,7 @@ final class Remote {
      * @return true if do timing successfully
      * @throws IOException IOException
      */
-    static boolean normalTiming(@NotNull Map<String, String> cookies, @NotNull Timing timing) throws IOException {
+    static boolean normalTiming(Map<String, String> cookies, Timing timing) throws IOException {
         if (timing.type != Timing.Type.NORMAL_OR_PHOTO) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
@@ -182,8 +176,7 @@ final class Remote {
      * @throws IOException IOException
      */
     @Nullable
-    static String photoTiming(@NotNull Map<String, String> cookies,
-                              @NotNull Timing timing, @NotNull InputStream inputStream) throws IOException {
+    static String photoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
         String objectId = uploadImage(cookies, inputStream);
         Connection.Response response =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
@@ -213,8 +206,7 @@ final class Remote {
      * @throws IOException IOException
      */
     @Nullable
-    static String qrcodeTiming(@NotNull Map<String, String> cookies,
-                               @NotNull Timing timing, @NotNull String enc) throws IOException {
+    static String qrcodeTiming(Map<String, String> cookies, Timing timing, String enc) throws IOException {
         if (timing.type != Timing.Type.QRCODE) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
@@ -246,7 +238,7 @@ final class Remote {
      * @return true if success
      * @throws IOException IOException
      */
-    static boolean gestureTiming(@NotNull Map<String, String> cookies, @NotNull Timing timing) throws IOException {
+    static boolean gestureTiming(Map<String, String> cookies, Timing timing) throws IOException {
         if (timing.type != Timing.Type.GESTURE) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
@@ -272,8 +264,7 @@ final class Remote {
      * @throws IOException IOException
      */
     @Nullable
-    static String locationTiming(@NotNull Map<String, String> cookies,
-                                 @NotNull Timing timing, @NotNull String address,
+    static String locationTiming(Map<String, String> cookies, Timing timing, String address,
                                  @Nullable String latitude, @Nullable String longitude) throws IOException {
         if (timing.type != Timing.Type.LOCATION) {
             throw new IllegalArgumentException("Mismatched Timing!");
@@ -313,7 +304,7 @@ final class Remote {
      * @throws IOException IOException
      */
     @Nullable
-    private static String getToken(@NotNull Map<String, String> cookies) throws IOException {
+    private static String getToken(Map<String, String> cookies) throws IOException {
         Connection.Response response =
                 Jsoup.connect("https://pan-yz.chaoxing.com/api/token/uservalid")
                         .cookies(cookies)
@@ -333,8 +324,7 @@ final class Remote {
      * @return objectId
      * @throws IOException IOException
      */
-    private static String uploadImage(@NotNull Map<String, String> cookies,
-                                      @NotNull InputStream inputStream) throws IOException {
+    private static String uploadImage(Map<String, String> cookies, InputStream inputStream) throws IOException {
         final String token = getToken(cookies);
         final String uid = cookies.get("UID");
         Connection.Response response = Jsoup.connect("https://pan-yz.chaoxing.com/upload")
