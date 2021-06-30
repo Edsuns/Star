@@ -59,8 +59,9 @@ final class Remote {
      * @throws IOException IOException
      */
     static boolean validateLogin(Map<String, String> cookies) throws IOException {
+        // protocol of the url must be https, which can avoid network portal redirection
         Connection.Response response =
-                Jsoup.connect("http://mooc1-1.chaoxing.com/api/workTestPendingNew")
+                Jsoup.connect("https://mooc1-1.chaoxing.com/api/workTestPendingNew")
                         .cookies(cookies)
                         .followRedirects(false)// if cookies is invalid, it will redirect to login page
                         .execute();
@@ -75,7 +76,7 @@ final class Remote {
      * @throws IOException IOException
      */
     static List<Course> getAllCourses(Map<String, String> cookies) throws IOException {
-        Document document = Jsoup.connect("http://mooc1-2.chaoxing.com/visit/interaction")
+        Document document = Jsoup.connect("https://mooc1-2.chaoxing.com/visit/interaction")
                 .cookies(cookies)
                 .get();
         Elements courseIds = document.select("input[name=courseId]");
