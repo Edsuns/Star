@@ -12,4 +12,22 @@ object SettingsStorage {
         set(value) {
             pref.edit { putString("username", value) }
         }
+
+    var address: String?
+        get() = pref.getString("address", null)
+        set(value) {
+            pref.edit { putString("address", value) }
+        }
+
+    var latitude: String?
+        get() = pref.getString("latitude", null)
+        set(value) {
+            pref.edit { putString("latitude", value) }
+        }
+
+    var longitude: String?
+        get() = pref.getString("longitude", null)
+        set(value) {
+            pref.edit { putString("longitude", value) }
+        }
 }

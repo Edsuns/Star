@@ -10,16 +10,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
@@ -30,6 +34,7 @@ import io.github.edsuns.star.Repository
 import io.github.edsuns.star.ext.copy
 import io.github.edsuns.star.ext.needImage
 import io.github.edsuns.star.ext.ref
+import io.github.edsuns.star.local.SettingsStorage
 import io.github.edsuns.star.util.Result
 import io.github.edsuns.star.util.produceUiState
 import kotlinx.coroutines.CoroutineScope
@@ -125,9 +130,14 @@ fun SignTimingSheetContent(
     coroutineScope: CoroutineScope
 ) {
     val context = LocalContext.current
-    val imageUri = remember {
-        mutableStateOf<Uri?>(null)
+    val locationState = remember {
+        val state = LocationState()
+        SettingsStorage.address?.let { state.address = it }
+        SettingsStorage.latitude?.let { state.latitude = it }
+        SettingsStorage.longitude?.let { state.longitude = it }
+        state
     }
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
     val (clickUiState, sendSign, clearError) = produceUiState(
         Repository,
         selectedTiming.ref,
@@ -157,6 +167,19 @@ fun SignTimingSheetContent(
                     }
                 }
             }
+            Timing.Type.LOCATION -> {
+                val latitude = locationState.latitude.toFloatOrNull() ?: -1.0f
+                val longitude = locationState.longitude.toFloatOrNull() ?: -1.0f
+                val config = Repository.TimingConfig(
+                    address = locationState.address,
+                    latitude = latitude,
+                    longitude = longitude
+                )
+                SettingsStorage.address = locationState.address
+                SettingsStorage.latitude = locationState.latitude
+                SettingsStorage.longitude = locationState.longitude
+                result = onTimingClicked(selectedTiming.ref, config)
+            }
             Timing.Type.GESTURE -> {
                 result = onTimingClicked(selectedTiming.ref)
             }
@@ -184,7 +207,12 @@ fun SignTimingSheetContent(
     ) {
         if (!signed) {
             if (selectedTiming.ref.needImage) {
-                RequestImageSection(imageUri)
+                ImageRequestBox(imageUri)
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+            if (selectedTiming.ref.type == Timing.Type.LOCATION) {
+                LocationConfigBox(locationState)
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
         if (clickUiState.value.loading) {
@@ -203,7 +231,7 @@ fun SignTimingSheetContent(
 }
 
 @Composable
-fun RequestImageSection(imageUri: MutableState<Uri?>) {
+fun ImageRequestBox(imageUri: MutableState<Uri?>) {
     val bitmap = remember {
         mutableStateOf<Bitmap?>(null)
     }
@@ -245,6 +273,85 @@ fun RequestImageSection(imageUri: MutableState<Uri?>) {
                 Text(text = stringResource(id = R.string.pick_image))
             }
         }
-        Spacer(modifier = Modifier.height(20.dp))
     }
+}
+
+@Composable
+fun LocationConfigBox(locationState: LocationState) {
+    val focusRequesters = List(3) { FocusRequester() }
+    Column {
+        DefaultTextField(
+            value = locationState.address,
+            placeholder = { Text(stringResource(R.string.address)) },
+            onValueChange = { locationState.address = it },
+            focusRequester = focusRequesters[0],
+            nextFocusRequester = focusRequesters[1],
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.MyLocation,
+                    contentDescription = stringResource(R.string.address),
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        )
+        DefaultTextField(
+            value = locationState.latitude,
+            placeholder = { Text(stringResource(R.string.latitude)) },
+            onValueChange = { locationState.latitude = it },
+            focusRequester = focusRequesters[1],
+            nextFocusRequester = focusRequesters[2],
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.EditLocation,
+                    contentDescription = stringResource(R.string.latitude),
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        )
+        DefaultTextField(
+            value = locationState.longitude,
+            placeholder = { Text(stringResource(R.string.longitude)) },
+            onValueChange = { locationState.longitude = it },
+            imeAction = ImeAction.Go,
+            focusRequester = focusRequesters[2],
+            nextFocusRequester = focusRequesters[2],
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.EditLocation,
+                    contentDescription = stringResource(R.string.longitude),
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        )
+    }
+}
+
+@Composable
+fun DefaultTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Next,
+    focusRequester: FocusRequester,
+    nextFocusRequester: FocusRequester,
+    placeholder: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier
+            .focusOrder(focusRequester) {
+                nextFocusRequester.requestFocus()
+            }
+            .padding(bottom = 8.dp)
+            .fillMaxWidth(),
+        maxLines = 1,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = imeAction
+        )
+    )
 }

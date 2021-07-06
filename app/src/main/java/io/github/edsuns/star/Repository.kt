@@ -17,6 +17,8 @@ object Repository {
     data class TimingConfig(
         val enc: String = "",
         val address: String = "",
+        val latitude: Float = -1.0f,
+        val longitude: Float = -1.0f,
         val imageInput: InputStream? = null,
         val photoProvider: CXing.PhotoProvider? = null
     )
@@ -74,9 +76,16 @@ object Repository {
                 if (timing.type == Timing.Type.QRCODE) {
                     return@withContext Result.Success(xing.qrcodeTiming(timing, timingConfig.enc))
                 }
-//            if (timing.type == Timing.Type.LOCATION) {
-//                return@withContext xing.locationTiming(timing, timingConfig!!.address, null, null)
-//            }
+                if (timing.type == Timing.Type.LOCATION) {
+                    return@withContext Result.Success(
+                        xing.locationTiming(
+                            timing,
+                            timingConfig.address,
+                            timingConfig.latitude.toString(),
+                            timingConfig.longitude.toString()
+                        )
+                    )
+                }
                 if (timing.type == Timing.Type.NORMAL_OR_PHOTO) {
                     return@withContext Result.Success(
                         xing.normalOrPhotoTiming(timing) { timingConfig.imageInput!! }

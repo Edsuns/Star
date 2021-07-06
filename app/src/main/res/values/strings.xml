@@ -17,4 +17,7 @@
     <string name="signed">Signed</string>
     <string name="sign">Sign</string>
     <string name="pick_image">Pick image</string>
+    <string name="latitude">Latitude</string>
+    <string name="address">Address</string>
+    <string name="longitude">Longitude</string>
 </resources>
