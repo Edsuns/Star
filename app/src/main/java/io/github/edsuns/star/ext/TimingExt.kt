@@ -8,6 +8,8 @@ import io.github.edsuns.chaoxing.model.Timing
  * Created by Edsuns@qq.com on 2021/6/29.
  */
 
+val Timing.needImage get() = this.type == Timing.Type.NORMAL_OR_PHOTO || this.type == Timing.Type.QRCODE
+
 fun Timing.copy(state: Timing.State): Timing {
     val copy = Timing(course, activeId)
     copy.type = type

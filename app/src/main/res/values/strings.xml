@@ -16,4 +16,5 @@
     <string name="nothing_found">Nothing found.</string>
     <string name="signed">Signed</string>
     <string name="sign">Sign</string>
+    <string name="pick_image">Pick image</string>
 </resources>

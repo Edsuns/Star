@@ -1,5 +1,7 @@
 package io.github.edsuns.star.ui.composable
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +35,7 @@ import kotlinx.coroutines.launch
  * Created by Edsuns@qq.com on 2021/6/27.
  */
 
+@RequiresApi(Build.VERSION_CODES.P)
 @ExperimentalMaterialApi
 @Composable
 fun TimingScreen(
@@ -181,9 +184,10 @@ fun ActiveTimingList(
     LazyColumn(modifier = modifier) {
         items(data.size) { index ->
             val item = data[index]
-            val timingState = remember(item.activeId, item.course.id, item.course.classId) {
-                mutableStateOf(item)
-            }
+            val timingState =
+                remember(item.activeId, item.course.id, item.course.classId, item.state) {
+                    mutableStateOf(item)
+                }
 
             val onClickHandle: () -> Unit = {
                 selectedTiming.value = timingState

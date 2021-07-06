@@ -103,7 +103,7 @@ final class Remote {
                         .data("classId", course.classId)
                         .data("activeId", activeId)
                         .get();
-        Elements elements = document.select(".qd_Success span");
+        Elements elements = document.select(".qd_Success dl span");
         if (elements.size() == 0) {
             return "";
         }
@@ -163,7 +163,8 @@ final class Remote {
                         .data("courseId", timing.course.id)
                         .data("classId", timing.course.classId)
                         .data("activeId", timing.activeId)
-                        .data("fid", "39037").get();
+                        .data("fid", cookies.get("fid"))
+                        .get();
         return document.title().contains("签到成功");
     }
 
@@ -181,11 +182,12 @@ final class Remote {
         String objectId = uploadImage(cookies, inputStream);
         Connection.Response response =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
-                        .data("name", "")
+                        .cookies(cookies)
+                        .data("name", timing.course.name)
                         .data("activeId", timing.activeId)
                         .data("address", "中国")
-                        .data("uid", "")
-                        .data("fid", "")
+                        .data("uid", cookies.get("UID"))
+                        .data("fid", cookies.get("fid"))
                         .data("appType", "15")
                         .data("ifTiJiao", "1")
                         .data("objectId", objectId)
@@ -216,16 +218,16 @@ final class Remote {
                 .data("enc", enc)
                 .data("name", timing.course.name)
                 .data("activeId", timing.activeId)
-                .data("uid", "")
+                .data("uid", cookies.get("UID"))
                 .data("clientip", "")
                 .data("useragent", HttpConnection.DEFAULT_UA)
                 .data("latitude", "-1")
                 .data("longitude", "-1")
-                .data("fid", "")
+                .data("fid", cookies.get("fid"))
                 .data("appType", "15")
                 .execute();
         String text = response.body();
-        if (text.contains("success")) {
+        if (text.contains("success") || text.contains("已签到")) {
             return text;// example: {"name": "", "date": "01-01 16:26", "status": "success"}
         }
         return null;
@@ -281,12 +283,12 @@ final class Remote {
                 .data("name", timing.course.name)
                 .data("activeId", timing.activeId)
                 .data("address", address)
-                .data("uid", "")
+                .data("uid", cookies.get("UID"))
                 .data("clientip", "")
                 .data("useragent", HttpConnection.DEFAULT_UA)
                 .data("latitude", latitude)
                 .data("longitude", longitude)
-                .data("fid", "")
+                .data("fid", cookies.get("fid"))
                 .data("appType", "15")
                 .data("ifTiJiao", "1")
                 .execute();
@@ -333,9 +335,12 @@ final class Remote {
                 .cookies(cookies)
                 .data("puid", uid)
                 .data("_token", token)
-                .data("file", "", inputStream, "image/webp,image/*")
+                .data("file", "photo.jpg", inputStream, "image/webp,image/*")
                 .execute();
         JSONObject object = new JSONObject(response.body());
-        return object.getString("objectId");
+        if (object.getBoolean("result")) {
+            return object.getString("objectId");
+        }
+        throw new IOException(response.body());
     }
 }

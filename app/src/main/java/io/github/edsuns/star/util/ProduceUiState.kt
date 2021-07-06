@@ -74,8 +74,9 @@ data class ProducerResult<T>(
 @Composable
 fun <Producer, T> produceUiState(
     producer: Producer,
+    initialRefresh: Boolean = true,
     block: suspend Producer.() -> Result<T>
-): ProducerResult<UiState<T>> = produceUiState(producer, Unit, block)
+): ProducerResult<UiState<T>> = produceUiState(producer, Unit, initialRefresh, block)
 
 /**
  * Launch a coroutine to create refreshable [UiState] from a suspending producer.
@@ -108,6 +109,7 @@ fun <Producer, T> produceUiState(
 fun <Producer, T> produceUiState(
     producer: Producer,
     key: Any?,
+    initialRefresh: Boolean = true,
     block: suspend Producer.() -> Result<T>
 ): ProducerResult<UiState<T>> {
     // posting to this channel will trigger a single refresh
@@ -115,11 +117,13 @@ fun <Producer, T> produceUiState(
     // posting to this channel will clear the current error condition (if any)
     val errorClearChannel = remember { Channel<Unit>(Channel.CONFLATED) }
 
-    val result = produceState(UiState<T>(loading = true), producer, key) {
+    val result = produceState(UiState<T>(loading = initialRefresh), producer, key) {
         // whenever the coroutine restarts from producer or key changes, clear the previous result
         // immediately and force refresh
-        value = UiState(loading = true)
-        refreshChannel.send(Unit)
+        if (initialRefresh) {
+            value = UiState(loading = true)
+            refreshChannel.send(Unit)
+        }
 
         // launch a new coroutine to handle errorClear events async
         launch {
