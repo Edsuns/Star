@@ -133,29 +133,36 @@ fun SignTimingSheetContent(
         selectedTiming.ref,
         false
     ) {
-        val result = when (selectedTiming.ref.type) {
+        var result: Result<Boolean>? = null
+        when (selectedTiming.ref.type) {
             Timing.Type.NORMAL_OR_PHOTO -> {
-                val uri =
-                    imageUri.value ?: return@produceUiState onTimingClicked(selectedTiming.ref)
-                val inputStream = context.contentResolver.openInputStream(uri)
-                onTimingClicked(
-                    selectedTiming.ref,
-                    Repository.TimingConfig(imageInput = inputStream)
-                )
-            }
-            Timing.Type.QRCODE -> {
-                val uri =
-                    imageUri.value ?: return@produceUiState onTimingClicked(selectedTiming.ref)
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val qrcode = decodeQRImage(ImageDecoder.createSource(context.contentResolver, uri))
-                if (inputStream != null && qrcode != null) {
-                    val enc = qrcode.substring(qrcode.lastIndexOf("enc=") + 4)
-                    onTimingClicked(selectedTiming.ref, Repository.TimingConfig(enc))
-                } else {
-                    onTimingClicked(selectedTiming.ref)
+                val uri = imageUri.value
+                if (uri != null) {
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    result = onTimingClicked(
+                        selectedTiming.ref,
+                        Repository.TimingConfig(imageInput = inputStream)
+                    )
                 }
             }
-            else -> onTimingClicked(selectedTiming.ref)
+            Timing.Type.QRCODE -> {
+                val uri = imageUri.value
+                if (uri != null) {
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val qrcode =
+                        decodeQRImage(ImageDecoder.createSource(context.contentResolver, uri))
+                    if (inputStream != null && qrcode != null) {
+                        val enc = qrcode.substring(qrcode.lastIndexOf("enc=") + 4)
+                        result = onTimingClicked(selectedTiming.ref, Repository.TimingConfig(enc))
+                    }
+                }
+            }
+            Timing.Type.GESTURE -> {
+                result = onTimingClicked(selectedTiming.ref)
+            }
+            else -> {
+                // do nothing
+            }
         }
         // checking sheetState.isVisible is necessary
         if (sheetState.isVisible && result is Result.Success && result.data) {
@@ -165,7 +172,7 @@ fun SignTimingSheetContent(
                     selectedTiming.ref.copy(Timing.State.SUCCESS)
             }
         }
-        return@produceUiState result
+        return@produceUiState result ?: Result.Success(false)
     }
     val signed = selectedTiming.ref.state == Timing.State.SUCCESS
     val signButtonText =
@@ -187,7 +194,7 @@ fun SignTimingSheetContent(
                 onClick = {
                     sendSign()
                 },
-                enabled = !signed && imageUri.value != null
+                enabled = !signed && (!selectedTiming.ref.needImage || imageUri.value != null)
             ) {
                 Text(text = signButtonText)
             }

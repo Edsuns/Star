@@ -61,25 +61,27 @@ object Repository {
         timingConfig: TimingConfig? = null
     ): Result<Boolean> = try {
         withContext(Dispatchers.IO) {
-            if (timingConfig == null) {
-                return@withContext Result.Success(false)
-            }
+            // timings doesn't need config
             if (timing.state == Timing.State.SUCCESS) {
                 return@withContext Result.Success(false)
-            }
-            if (timing.type == Timing.Type.QRCODE) {
-                return@withContext Result.Success(xing.qrcodeTiming(timing, timingConfig.enc))
             }
             if (timing.type == Timing.Type.GESTURE) {
                 return@withContext Result.Success(xing.gestureTiming(timing))
             }
+
+            // timings need config
+            if (timingConfig != null) {
+                if (timing.type == Timing.Type.QRCODE) {
+                    return@withContext Result.Success(xing.qrcodeTiming(timing, timingConfig.enc))
+                }
 //            if (timing.type == Timing.Type.LOCATION) {
 //                return@withContext xing.locationTiming(timing, timingConfig!!.address, null, null)
 //            }
-            if (timing.type == Timing.Type.NORMAL_OR_PHOTO) {
-                return@withContext Result.Success(
-                    xing.normalOrPhotoTiming(timing) { timingConfig.imageInput!! }
-                )
+                if (timing.type == Timing.Type.NORMAL_OR_PHOTO) {
+                    return@withContext Result.Success(
+                        xing.normalOrPhotoTiming(timing) { timingConfig.imageInput!! }
+                    )
+                }
             }
             return@withContext Result.Success(false)
         }
