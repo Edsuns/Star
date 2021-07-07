@@ -26,7 +26,6 @@ sealed class LoginEvent {
     object NavigateBack : LoginEvent()
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Login(onNavigationEvent: (LoginEvent) -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -34,7 +33,7 @@ fun Login(onNavigationEvent: (LoginEvent) -> Unit) {
     Scaffold(
         topBar = {
             SignInSignUpTopAppBar(
-                topAppBarText = stringResource(id = R.string.login),
+                topAppBarText = stringResource(id = R.string.app_name),
                 onBackPressed = { onNavigationEvent(LoginEvent.NavigateBack) }
             )
         },
@@ -77,13 +76,14 @@ fun LoginContent(
         return
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         val focusRequester = remember { FocusRequester() }
         val usernameState = remember { UsernameState() }
         if (!usernameState.isFocusedDirty) {
             usernameState.text = SettingsStorage.username ?: ""
         }
-        val passwordState = remember { PasswordState() }
+        val invalidPasswordStr = stringResource(R.string.invalid_password)
+        val passwordState = remember { PasswordState { invalidPasswordStr } }
         if (passwordState.hasSubmit
             && !loginUiState.value.loading
             && !loginUiState.value.hasError
@@ -119,7 +119,8 @@ fun LoginContent(
             enabled = usernameState.isValid && passwordState.isValid && !loginUiState.value.loading
         ) {
             Text(
-                text = stringResource(id = R.string.login)
+                text = stringResource(id = R.string.login),
+                modifier = Modifier.padding(6.dp)
             )
         }
         if (loginUiState.value.loading) {
@@ -128,7 +129,6 @@ fun LoginContent(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ErrorSnackbar(
     snackbarHostState: SnackbarHostState,

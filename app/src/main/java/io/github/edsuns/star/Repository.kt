@@ -17,8 +17,8 @@ object Repository {
     data class TimingConfig(
         val enc: String = "",
         val address: String = "",
-        val latitude: Float = -1.0f,
         val longitude: Float = -1.0f,
+        val latitude: Float = -1.0f,
         val imageInput: InputStream? = null,
         val photoProvider: CXing.PhotoProvider? = null
     )

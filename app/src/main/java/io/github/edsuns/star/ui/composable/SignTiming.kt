@@ -132,9 +132,9 @@ fun SignTimingSheetContent(
     val context = LocalContext.current
     val locationState = remember {
         val state = LocationState()
-        SettingsStorage.address?.let { state.address = it }
-        SettingsStorage.latitude?.let { state.latitude = it }
-        SettingsStorage.longitude?.let { state.longitude = it }
+        state.address = SettingsStorage.address ?: "-1"
+        state.longitude = SettingsStorage.longitude ?: "-1"
+        state.latitude = SettingsStorage.latitude ?: "-1"
         state
     }
     val imageUri = remember { mutableStateOf<Uri?>(null) }
@@ -205,12 +205,18 @@ fun SignTimingSheetContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        var noBlank = true
         if (!signed) {
             if (selectedTiming.ref.needImage) {
+                noBlank = imageUri.value != null
                 ImageRequestBox(imageUri)
                 Spacer(modifier = Modifier.height(20.dp))
             }
             if (selectedTiming.ref.type == Timing.Type.LOCATION) {
+                noBlank =
+                    (locationState.address.isNotBlank()
+                            && locationState.longitude.isNotBlank()
+                            && locationState.latitude.isNotBlank())
                 LocationConfigBox(locationState)
                 Spacer(modifier = Modifier.height(20.dp))
             }
@@ -222,7 +228,7 @@ fun SignTimingSheetContent(
                 onClick = {
                     sendSign()
                 },
-                enabled = !signed && (!selectedTiming.ref.needImage || imageUri.value != null)
+                enabled = !signed && noBlank
             ) {
                 Text(text = signButtonText)
             }
@@ -267,8 +273,6 @@ fun ImageRequestBox(imageUri: MutableState<Uri?>) {
                         .height(180.dp)
                         .fillMaxWidth()
                 )
-                bitmap.value?.let {
-                }
             } else {
                 Text(text = stringResource(id = R.string.pick_image))
             }
@@ -295,30 +299,30 @@ fun LocationConfigBox(locationState: LocationState) {
             }
         )
         DefaultTextField(
-            value = locationState.latitude,
-            placeholder = { Text(stringResource(R.string.latitude)) },
-            onValueChange = { locationState.latitude = it },
+            value = locationState.longitude,
+            placeholder = { Text(stringResource(R.string.longitude)) },
+            onValueChange = { locationState.longitude = it },
+            imeAction = ImeAction.Go,
             focusRequester = focusRequesters[1],
             nextFocusRequester = focusRequesters[2],
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.EditLocation,
-                    contentDescription = stringResource(R.string.latitude),
+                    contentDescription = stringResource(R.string.longitude),
                     modifier = Modifier.padding(4.dp)
                 )
             }
         )
         DefaultTextField(
-            value = locationState.longitude,
-            placeholder = { Text(stringResource(R.string.longitude)) },
-            onValueChange = { locationState.longitude = it },
-            imeAction = ImeAction.Go,
+            value = locationState.latitude,
+            placeholder = { Text(stringResource(R.string.latitude)) },
+            onValueChange = { locationState.latitude = it },
             focusRequester = focusRequesters[2],
             nextFocusRequester = focusRequesters[2],
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.EditLocation,
-                    contentDescription = stringResource(R.string.longitude),
+                    contentDescription = stringResource(R.string.latitude),
                     modifier = Modifier.padding(4.dp)
                 )
             }
@@ -346,6 +350,7 @@ fun DefaultTextField(
             }
             .padding(bottom = 8.dp)
             .fillMaxWidth(),
+        isError = value.isBlank(),
         maxLines = 1,
         placeholder = placeholder,
         leadingIcon = leadingIcon,

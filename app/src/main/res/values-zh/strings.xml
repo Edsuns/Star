@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">签到助手</string>
+    <string name="username">用户名/手机号</string>
+    <string name="password">密码</string>
+    <string name="login">登录</string>
+    <string name="invalid_password">密码无效</string>
+    <string name="dismiss">关闭</string>
+    <string name="back">返回</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+    <string name="about">关于</string>
+    <string name="logout">退出登录</string>
+    <string name="network_error">网络故障！</string>
+    <string name="retry">重试</string>
+    <string name="nothing_found">暂无数据</string>
+    <string name="signed">已签到</string>
+    <string name="sign">签到</string>
+    <string name="pick_image">选取图片</string>
+    <string name="address">地址名称</string>
+    <string name="longitude">经度</string>
+    <string name="latitude">纬度</string>
+</resources>
