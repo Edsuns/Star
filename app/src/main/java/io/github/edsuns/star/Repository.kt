@@ -104,10 +104,11 @@ object Repository {
             if (username.isEmpty() || password.isEmpty()) {
                 return@withContext Result.Success(false)
             }
-            val remote = CXing(username, cookieStorage)
+            val usernameTrim = username.trim()
+            val remote = CXing(usernameTrim, cookieStorage)
             val valid = remote.login(password)
             if (valid) {
-                SettingsStorage.username = username
+                SettingsStorage.username = usernameTrim
                 _xing = remote
             }
             return@withContext Result.Success(valid)

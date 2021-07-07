@@ -78,7 +78,8 @@ fun LoginContent(
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         val focusRequester = remember { FocusRequester() }
-        val usernameState = remember { UsernameState() }
+        val invalidUsernameStr = stringResource(R.string.invalid_username)
+        val usernameState = remember { UsernameState() { invalidUsernameStr } }
         if (!usernameState.isFocusedDirty) {
             usernameState.text = SettingsStorage.username ?: ""
         }

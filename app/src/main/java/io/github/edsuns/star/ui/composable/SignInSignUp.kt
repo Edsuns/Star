@@ -76,7 +76,7 @@ fun SignInSignUpTopAppBar(topAppBarText: String, onBackPressed: () -> Unit) {
 
 @Composable
 fun Username(
-    usernameState: TextFieldState = remember { UsernameState() },
+    usernameState: TextFieldState,
     imeAction: ImeAction = ImeAction.Next,
     onImeAction: () -> Unit = {}
 ) {

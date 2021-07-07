@@ -5,6 +5,7 @@
     <string name="password">密码</string>
     <string name="login">登录</string>
     <string name="invalid_password">密码无效</string>
+    <string name="invalid_username">用户名无效</string>
     <string name="dismiss">关闭</string>
     <string name="back">返回</string>
     <string name="show_password">显示密码</string>
@@ -20,4 +21,5 @@
     <string name="address">地址名称</string>
     <string name="longitude">经度</string>
     <string name="latitude">纬度</string>
+    <string name="qrcode_not_found">找不到二维码！</string>
 </resources>

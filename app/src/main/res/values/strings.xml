@@ -4,6 +4,7 @@
     <string name="password">Password</string>
     <string name="login">Login</string>
     <string name="invalid_password">Invalid password</string>
+    <string name="invalid_username">Invalid username</string>
     <string name="dismiss">DISMISS</string>
     <string name="back">Back</string>
     <string name="show_password">Show password</string>
@@ -21,4 +22,5 @@
     <string name="latitude">Latitude</string>
     <string name="address">Address</string>
     <string name="longitude">Longitude</string>
+    <string name="qrcode_not_found">QRCode was not found.</string>
 </resources>

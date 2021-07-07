@@ -1,13 +1,10 @@
 package io.github.edsuns.star.ui.composable
 
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,14 +23,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.google.zxing.*
-import com.google.zxing.common.HybridBinarizer
-import com.google.zxing.qrcode.QRCodeReader
 import io.github.edsuns.chaoxing.model.Timing
 import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
-import io.github.edsuns.star.ext.copy
-import io.github.edsuns.star.ext.needImage
-import io.github.edsuns.star.ext.ref
+import io.github.edsuns.star.ext.*
 import io.github.edsuns.star.local.SettingsStorage
 import io.github.edsuns.star.util.Result
 import io.github.edsuns.star.util.produceUiState
@@ -45,7 +38,6 @@ import kotlinx.coroutines.launch
  * Created by Edsuns@qq.com on 2021/6/30.
  */
 
-@RequiresApi(Build.VERSION_CODES.P)
 @ExperimentalMaterialApi
 @Composable
 fun SignTimingBottomSheet(
@@ -88,40 +80,6 @@ fun SignTimingSheetHeader(selectedTiming: MutableState<MutableState<Timing>>) {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.P)
-fun decodeQRImage(source: ImageDecoder.Source): String? {
-    val bMap = ImageDecoder.decodeBitmap(
-        source
-    ) { decoder, _, _ ->
-        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-        decoder.isMutableRequired = true
-    }
-    var decoded: String? = null
-    val intArray = IntArray(bMap.width * bMap.height)
-    bMap.getPixels(
-        intArray, 0, bMap.width, 0, 0, bMap.width,
-        bMap.height
-    )
-    val luminanceSource: LuminanceSource = RGBLuminanceSource(
-        bMap.width,
-        bMap.height, intArray
-    )
-    val bitmap = BinaryBitmap(HybridBinarizer(luminanceSource))
-    val reader: Reader = QRCodeReader()
-    try {
-        val result = reader.decode(bitmap)
-        decoded = result.text
-    } catch (e: NotFoundException) {
-        e.printStackTrace()
-    } catch (e: ChecksumException) {
-        e.printStackTrace()
-    } catch (e: FormatException) {
-        e.printStackTrace()
-    }
-    return decoded
-}
-
-@RequiresApi(Build.VERSION_CODES.P)
 @ExperimentalMaterialApi
 @Composable
 fun SignTimingSheetContent(
@@ -159,8 +117,13 @@ fun SignTimingSheetContent(
                 val uri = imageUri.value
                 if (uri != null) {
                     val inputStream = context.contentResolver.openInputStream(uri)
-                    val qrcode =
-                        decodeQRImage(ImageDecoder.createSource(context.contentResolver, uri))
+                    val qrcode = try {
+                        decodeQRCode(context.contentResolver, uri)
+                    } catch (err: NotFoundException) {
+                        Toast.makeText(context, R.string.qrcode_not_found, Toast.LENGTH_SHORT)
+                            .show()
+                        null
+                    }
                     if (inputStream != null && qrcode != null) {
                         val enc = qrcode.substring(qrcode.lastIndexOf("enc=") + 4)
                         result = onTimingClicked(selectedTiming.ref, Repository.TimingConfig(enc))
@@ -252,14 +215,7 @@ fun ImageRequestBox(imageUri: MutableState<Uri?>) {
 
     imageUri.value?.let {
         val context = LocalContext.current
-        if (Build.VERSION.SDK_INT < 28) {
-            bitmap.value = MediaStore.Images
-                .Media.getBitmap(context.contentResolver, it)
-
-        } else {
-            val source = ImageDecoder.createSource(context.contentResolver, it)
-            bitmap.value = ImageDecoder.decodeBitmap(source)
-        }
+        bitmap.value = context.contentResolver.getBitmap(it)
     }
 
     Column {

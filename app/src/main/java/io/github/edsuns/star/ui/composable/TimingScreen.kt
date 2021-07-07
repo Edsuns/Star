@@ -1,7 +1,5 @@
 package io.github.edsuns.star.ui.composable
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,7 +33,6 @@ import kotlinx.coroutines.launch
  * Created by Edsuns@qq.com on 2021/6/27.
  */
 
-@RequiresApi(Build.VERSION_CODES.P)
 @ExperimentalMaterialApi
 @Composable
 fun TimingScreen(
@@ -192,7 +189,7 @@ fun ActiveTimingList(
             val onClickHandle: () -> Unit = {
                 selectedTiming.value = timingState
                 coroutineScope.launch {
-                    modalBottomSheetState.show()
+                    modalBottomSheetState.animateTo(ModalBottomSheetValue.Expanded)
                 }
             }
 
