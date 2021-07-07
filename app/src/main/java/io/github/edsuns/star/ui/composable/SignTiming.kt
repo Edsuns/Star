@@ -151,11 +151,15 @@ fun SignTimingSheetContent(
             }
         }
         // checking sheetState.isVisible is necessary
-        if (sheetState.isVisible && result is Result.Success && result.data) {
-            coroutineScope.launch {
-                sheetState.hide()
-                selectedTiming.ref =
-                    selectedTiming.ref.copy(Timing.State.SUCCESS)
+        if (sheetState.isVisible && result is Result.Success) {
+            if (result.data) {
+                coroutineScope.launch {
+                    sheetState.hide()
+                    selectedTiming.ref =
+                        selectedTiming.ref.copy(Timing.State.SUCCESS)
+                }
+            } else {
+                Toast.makeText(context, R.string.failed_to_sign, Toast.LENGTH_SHORT).show()
             }
         }
         return@produceUiState result ?: Result.Success(false)
