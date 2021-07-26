@@ -3,17 +3,21 @@ package io.github.edsuns.star.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material.ExperimentalMaterialApi
 import com.google.accompanist.insets.ProvideWindowInsets
+import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
 import io.github.edsuns.star.Screen
 import io.github.edsuns.star.ext.ioScope
 import io.github.edsuns.star.ui.composable.TimingScreen
 import io.github.edsuns.star.ui.theme.ApplicationTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Created by Edsuns@qq.com on 2021/6/23.
@@ -26,9 +30,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ioScope.launch {
-            if ((!Repository.initialized() && !Repository.init())
-                || !Repository.xing.validateLogin()
-            ) {
+            if (Repository.init()) {
+                if (!Repository.validateLogin()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            R.string.login_out_of_date,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    navigateToLogin()
+                }
+            } else {
                 navigateToLogin()
             }
         }

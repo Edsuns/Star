@@ -6,6 +6,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.IOException
 
 /**
  * Created by Edsuns@qq.com on 2021/6/26.
@@ -32,8 +33,10 @@ class FileCookieStorage(context: Context) : CXing.CookieStorage {
 
     fun hasData(): Boolean = file.exists()
 
-    fun clear(): Boolean {
+    fun clear() {
         tempCookies = emptyMap()
-        return file.delete()
+        if (!file.delete()) {
+            throw IOException("Failed to clear cookies!")
+        }
     }
 }

@@ -12,6 +12,7 @@
     <string name="hide_password">隐藏密码</string>
     <string name="about">关于</string>
     <string name="logout">退出登录</string>
+    <string name="login_out_of_date">登陆状态已失效</string>
     <string name="network_error">网络故障！</string>
     <string name="retry">重试</string>
     <string name="nothing_found">暂无数据</string>

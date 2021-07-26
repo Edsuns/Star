@@ -26,12 +26,18 @@ object Repository {
     private val cookieStorage = FileCookieStorage(App.instance)
 
     private var _xing: CXing? = null
-    val xing: CXing
+    private val xing: CXing
         get() = _xing!!
 
-    fun initialized(): Boolean = _xing != null
+    private fun initialized(): Boolean = _xing != null
 
+    /**
+     * @return true if initialized (will try to initialize)
+     */
     fun init(): Boolean {
+        if (initialized()) {
+            return true
+        }
         val username = SettingsStorage.username ?: return false
         if (cookieStorage.hasData()) {
             _xing = CXing(username, cookieStorage)
@@ -116,6 +122,17 @@ object Repository {
     } catch (err: IOException) {
         logE("Login", err)
         Result.Error(err)
+    }
+
+    suspend fun validateLogin(): Boolean {
+        if (!initialized()) {
+            return false
+        }
+        if (!xing.validateLogin()) {
+            logout()
+            return false
+        }
+        return true
     }
 
     suspend fun logout() = withContext(Dispatchers.IO) {

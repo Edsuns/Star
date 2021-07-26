@@ -13,6 +13,7 @@
     <string name="unchecked">Unchecked</string>
     <string name="about">About</string>
     <string name="logout">Logout</string>
+    <string name="login_out_of_date">Login status has expired.</string>
     <string name="network_error">Network error!</string>
     <string name="retry">Retry</string>
     <string name="nothing_found">Nothing found.</string>
