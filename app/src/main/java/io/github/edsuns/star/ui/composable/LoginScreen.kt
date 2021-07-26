@@ -94,6 +94,16 @@ fun LoginContent(
             passwordState.hasSubmit = false
         }
 
+        val canSubmit =
+            usernameState.isValid && passwordState.isValid && !loginUiState.value.loading
+        val submitHandle = {
+            if (canSubmit) {
+                onLoginSubmitted(usernameState.text, passwordState.text)
+                refreshPost()
+                passwordState.hasSubmit = true
+            }
+        }
+
         Username(usernameState, onImeAction = { focusRequester.requestFocus() })
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -102,22 +112,18 @@ fun LoginContent(
             label = stringResource(id = R.string.password),
             passwordState = passwordState,
             modifier = Modifier.focusRequester(focusRequester),
-            onImeAction = { onLoginSubmitted(usernameState.text, passwordState.text) }
+            onImeAction = submitHandle
         )
         if (loginUiState.value.hasError) {
             TextFieldError(textError = stringResource(id = R.string.network_error))
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = {
-                onLoginSubmitted(usernameState.text, passwordState.text)
-                refreshPost()
-                passwordState.hasSubmit = true
-            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
-            enabled = usernameState.isValid && passwordState.isValid && !loginUiState.value.loading
+            enabled = canSubmit,
+            onClick = submitHandle
         ) {
             Text(
                 text = stringResource(id = R.string.login),
