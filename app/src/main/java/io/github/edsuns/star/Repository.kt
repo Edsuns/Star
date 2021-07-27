@@ -25,22 +25,19 @@ object Repository {
 
     private val cookieStorage = FileCookieStorage(App.instance)
 
-    private var _xing: CXing? = null
-    private val xing: CXing
-        get() = _xing!!
-
-    private fun initialized(): Boolean = _xing != null
+    private var xing: CXing? = null
 
     /**
-     * @return true if initialized (will try to initialize)
+     * Try to initialize.
+     * @return true if initialized
      */
     fun init(): Boolean {
-        if (initialized()) {
+        if (xing != null) {
             return true
         }
         val username = SettingsStorage.username ?: return false
         if (cookieStorage.hasData()) {
-            _xing = CXing(username, cookieStorage)
+            xing = CXing(username, cookieStorage)
             return true
         }
         return false
@@ -48,11 +45,14 @@ object Repository {
 
     suspend fun fetchAllActiveTiming(): Result<List<Timing>> = try {
         withContext(Dispatchers.IO) {
+            if (xing == null) {
+                return@withContext Result.Success(emptyList())
+            }
             val activeTimingList = mutableListOf<Timing>()
-            val allCourses = xing.allCourses
+            val allCourses = xing!!.allCourses
             val taskList = mutableListOf<Deferred<List<Timing>>>()
             for (course in allCourses) {
-                taskList.add(async { xing.getActiveTimingList(course) })
+                taskList.add(async { xing!!.getActiveTimingList(course) })
             }
             for (task in taskList) {
                 activeTimingList.addAll(task.await())
@@ -69,22 +69,22 @@ object Repository {
         timingConfig: TimingConfig? = null
     ): Result<Boolean> = try {
         withContext(Dispatchers.IO) {
-            // timings doesn't need config
-            if (timing.state == Timing.State.SUCCESS) {
+            if (xing == null || timing.state == Timing.State.SUCCESS) {
                 return@withContext Result.Success(false)
             }
+            // timings doesn't need config
             if (timing.type == Timing.Type.GESTURE) {
-                return@withContext Result.Success(xing.gestureTiming(timing))
+                return@withContext Result.Success(xing!!.gestureTiming(timing))
             }
 
             // timings need config
             if (timingConfig != null) {
                 if (timing.type == Timing.Type.QRCODE) {
-                    return@withContext Result.Success(xing.qrcodeTiming(timing, timingConfig.enc))
+                    return@withContext Result.Success(xing!!.qrcodeTiming(timing, timingConfig.enc))
                 }
                 if (timing.type == Timing.Type.LOCATION) {
                     return@withContext Result.Success(
-                        xing.locationTiming(
+                        xing!!.locationTiming(
                             timing,
                             timingConfig.address,
                             timingConfig.latitude.toString(),
@@ -94,7 +94,7 @@ object Repository {
                 }
                 if (timing.type == Timing.Type.NORMAL_OR_PHOTO) {
                     return@withContext Result.Success(
-                        xing.normalOrPhotoTiming(timing) { timingConfig.imageInput!! }
+                        xing!!.normalOrPhotoTiming(timing) { timingConfig.imageInput!! }
                     )
                 }
             }
@@ -115,7 +115,7 @@ object Repository {
             val valid = remote.login(password)
             if (valid) {
                 SettingsStorage.username = usernameTrim
-                _xing = remote
+                xing = remote
             }
             return@withContext Result.Success(valid)
         }
@@ -125,10 +125,10 @@ object Repository {
     }
 
     suspend fun validateLogin(): Boolean {
-        if (!initialized()) {
+        if (xing == null) {
             return false
         }
-        if (!xing.validateLogin()) {
+        if (!xing!!.validateLogin()) {
             logout()
             return false
         }
@@ -136,7 +136,7 @@ object Repository {
     }
 
     suspend fun logout() = withContext(Dispatchers.IO) {
-        _xing = null
+        xing = null
         cookieStorage.clear()
     }
 }
