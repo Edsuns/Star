@@ -8,7 +8,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import com.google.accompanist.insets.ProvideWindowInsets
+import com.google.accompanist.insets.statusBarsPadding
 import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
 import io.github.edsuns.star.Screen
@@ -45,15 +48,20 @@ class MainActivity : ComponentActivity() {
                 navigateToLogin()
             }
         }
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             ApplicationTheme {
                 ProvideWindowInsets {
-                    TimingScreen(onLogoutClicked = {
-                        viewModel.onLogout()
-                    })
+                    TimingScreen(
+                        modifier = Modifier.statusBarsPadding(),
+                        onLogoutClicked = {
+                            viewModel.onLogout()
+                        })
                 }
             }
         }
+
         viewModel.navigateTo.observe(this) {
             if (it.getContentIfNotHandled() == Screen.SignIn) {
                 navigateToLogin()

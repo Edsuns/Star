@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 @ExperimentalMaterialApi
 @Composable
 fun TimingScreen(
+    modifier: Modifier,
     onLogoutClicked: (LoginEvent) -> Unit,
     scaffoldState: ScaffoldState = rememberScaffoldState()
 ) {
@@ -59,6 +60,7 @@ fun TimingScreen(
         coroutineScope = coroutineScope
     ) {
         TimingScreenContent(
+            modifier = modifier,
             timings = postUiState.value,
             onRefreshTimings = refreshPost,
             onErrorDismiss = clearError,
@@ -75,6 +77,7 @@ fun TimingScreen(
 @ExperimentalMaterialApi
 @Composable
 fun TimingScreenContent(
+    modifier: Modifier,
     timings: UiState<List<Timing>>,
     onRefreshTimings: () -> Unit,
     onErrorDismiss: () -> Unit,
@@ -94,6 +97,7 @@ fun TimingScreenContent(
     }
 
     Scaffold(
+        modifier = modifier,
         scaffoldState = scaffoldState,
         topBar = {
             MainTopAppBar(
@@ -103,7 +107,6 @@ fun TimingScreenContent(
             )
         },
     ) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
         LoadingContent(
             empty = timings.data == null || timings.data.isEmpty(),
             emptyContent = {
@@ -130,7 +133,9 @@ fun TimingScreenContent(
             content = {
                 ActiveTimingList(
                     data = timings.data!!,
-                    modifier = modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize(),
                     selectedTiming = selectedTiming,
                     coroutineScope = coroutineScope,
                     modalBottomSheetState = modalBottomSheetState
