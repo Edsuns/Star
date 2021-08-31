@@ -76,20 +76,22 @@ final class Remote {
      * @throws IOException IOException
      */
     static List<Course> getAllCourses(Map<String, String> cookies) throws IOException {
-        Document document = Jsoup.connect("https://mooc1-2.chaoxing.com/visit/interaction")
+        Document document = Jsoup.connect("https://mooc1-2.chaoxing.com/visit/courselistdata")
                 .cookies(cookies)
-                .get();
-        Elements courseIds = document.select("input[name=courseId]");
-        Elements classIds = document.select("input[name=classId]");
-        Elements courseNames = document.select("h3.clearfix>a:first-child");
-        if (courseIds.size() != classIds.size() || courseIds.size() != courseNames.size()) {
+                .data("courseType", "1")
+                .data("courseFolderId", "0")
+                .data("courseFolderSize", "0")
+                .post();
+        Elements courseElements = document.select(".course-list .course");
+        Elements courseNames = document.select(".course-list .course-name");
+        if (courseElements.size() != courseNames.size()) {
             throw new RuntimeException("Wrong courses data!");
         }
         ArrayList<Course> courses = new ArrayList<>();
-        for (int i = 0; i < courseIds.size(); i++) {
+        for (int i = 0; i < courseElements.size(); i++) {
             String courseName = courseNames.get(i).text();
-            String courseId = courseIds.get(i).attr("value");
-            String classId = classIds.get(0).attr("value");
+            String courseId = courseElements.get(i).attr("courseid");
+            String classId = courseElements.get(i).attr("clazzid");
             courses.add(new Course(courseName, courseId, classId));
         }
         return courses;
