@@ -32,6 +32,8 @@ import io.github.edsuns.star.util.Result
 import io.github.edsuns.star.util.produceUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 /**
@@ -73,6 +75,10 @@ fun SignTimingSheetHeader(selectedTiming: MutableState<MutableState<Timing>>) {
         text = selectedTiming.ref.type.description,
         color = MaterialTheme.colors.primary,
         style = MaterialTheme.typography.h6
+    )
+    Text(
+        text = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.CHINA).format(selectedTiming.ref.time),
+        style = MaterialTheme.typography.subtitle2
     )
     Text(
         text = selectedTiming.ref.course.name,

@@ -55,6 +55,7 @@ public class Timing {
 
     public Course course;
     public String activeId;
+    public long time;
     public Type type;
     public State state;
 

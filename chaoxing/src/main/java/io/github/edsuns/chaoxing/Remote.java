@@ -11,9 +11,15 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -83,21 +89,22 @@ final class Remote {
                 .data("courseFolderSize", "0")
                 .post();
         Elements courseElements = document.select(".course-list .course");
-        Elements courseNames = document.select(".course-list .course-name");
-        if (courseElements.size() != courseNames.size()) {
-            throw new RuntimeException("Wrong courses data!");
-        }
         ArrayList<Course> courses = new ArrayList<>();
         for (int i = 0; i < courseElements.size(); i++) {
-            String courseName = courseNames.get(i).text();
-            String courseId = courseElements.get(i).attr("courseid");
-            String classId = courseElements.get(i).attr("clazzid");
+            Element element = courseElements.get(i);
+            Elements nameElements = element.select(".course-info .course-name");
+            if (nameElements.size() != 1) {
+                throw new RuntimeException("Wrong courses data!");
+            }
+            final String courseName = nameElements.text();
+            String courseId = element.attr("courseid");
+            String classId = element.attr("clazzid");
             courses.add(new Course(courseName, courseId, classId));
         }
         return courses;
     }
 
-    private static String getTimingState(Map<String, String> cookies, Course course, String activeId) throws IOException {
+    private static Timing.State getTimingState(Map<String, String> cookies, Course course, String activeId) throws IOException {
         Document document =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/preSign")
                         .cookies(cookies)
@@ -107,12 +114,12 @@ final class Remote {
                         .get();
         Elements elements = document.select(".qd_Success dl span");
         if (elements.size() == 0) {
-            return "";
+            return Timing.State.UNSIGNED;
         }
         if (elements.size() > 1) {
             throw new RuntimeException("Wrong selected activeId!");
         }
-        return elements.get(0).text();
+        return Timing.State.valueFrom(elements.get(0).text());
     }
 
     /**
@@ -130,7 +137,11 @@ final class Remote {
                         .data("courseId", course.id)
                         .data("jclassId", course.classId)
                         .get();
-        Elements elements = document.select("#startList>div>div:first-child");
+        Elements startElements = document.select("#startList>div>div:first-child");
+        Elements endElements = document.select("#endList>div>div:first-child");
+        Elements elements = new Elements(startElements.size() + endElements.size());
+        elements.addAll(startElements);
+        elements.addAll(endElements);
         List<Timing> activeTimingList = new ArrayList<>();
         for (Element element : elements) {
             Elements taskName = element.select("dl a dd");
@@ -140,11 +151,30 @@ final class Remote {
             String onclick = element.attr("onclick");// activeDetail(4000001234567,2,null)
             String activeId = onclick.substring(13, onclick.length() - 8);
             Timing timing = new Timing(course, activeId);
+            timing.time = parseDate(element.select("p:last-child>span").text()).getTime();
             timing.type = Timing.Type.valueFrom(element.select("div>a:first-child").text());
-            timing.state = Timing.State.valueFrom(getTimingState(cookies, course, activeId));
+            if (endElements.contains(element)
+                    && System.currentTimeMillis() - timing.time > TimeUnit.DAYS.toMillis(2)) {
+                continue;
+            }
+            timing.state = getTimingState(cookies, course, activeId);
             activeTimingList.add(timing);
         }
         return activeTimingList;
+    }
+
+    private static Date parseDate(String text) {
+        final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA);
+        try {
+            text = Calendar.getInstance(Locale.CHINA).get(Calendar.YEAR) + "-" + text;
+            return format.parse(text);
+        } catch (ParseException e) {
+            try {
+                return format.parse(text);
+            } catch (ParseException ignored) {
+            }
+        }
+        return new Date(0L);
     }
 
     /**
