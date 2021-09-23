@@ -24,4 +24,6 @@
     <string name="latitude">纬度</string>
     <string name="qrcode_not_found">找不到二维码！</string>
     <string name="failed_to_sign">签到失败！请重试。</string>
+    <string name="unknown_type">未知类型（请手动选择）</string>
+    <string name="expired">签到已过期</string>
 </resources>

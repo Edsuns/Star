@@ -205,6 +205,11 @@ fun ActiveTimingList(
             } else {
                 MaterialTheme.colors.background
             }
+            val typeDescription = if (timing.type != Timing.Type.UNKNOWN) {
+                timing.type.description
+            } else {
+                stringResource(id = R.string.unknown_type)
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -219,7 +224,7 @@ fun ActiveTimingList(
             ) {
                 Column {
                     Text(
-                        text = timing.type.description,
+                        text = typeDescription,
                         color = MaterialTheme.colors.primary,
                         style = MaterialTheme.typography.h6
                     )
@@ -229,6 +234,7 @@ fun ActiveTimingList(
                     )
                 }
                 CheckboxIconButton(
+                    isTimeout = timing.state == Timing.State.EXPIRED,
                     isChecked = isChecked,
                     onClick = onClickHandle
                 )

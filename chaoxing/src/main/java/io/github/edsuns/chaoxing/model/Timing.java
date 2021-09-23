@@ -31,7 +31,7 @@ public class Timing {
     }
 
     public enum State {
-        UNKNOWN("error"), UNSIGNED(""), SUCCESS("签到成功"), TIMEOUT("签到已过期");
+        UNKNOWN("error"), UNSIGNED(""), SUCCESS("签到成功"), EXPIRED("签到已过期");
 
         final String description;
 
@@ -43,8 +43,8 @@ public class Timing {
             if (SUCCESS.description.equals(description)) {
                 return SUCCESS;
             }
-            if (TIMEOUT.description.equals(description)) {
-                return TIMEOUT;
+            if (EXPIRED.description.equals(description)) {
+                return EXPIRED;
             }
             if (UNSIGNED.description.equals(description)) {
                 return UNSIGNED;

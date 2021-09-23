@@ -5,7 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -17,11 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
 import com.google.zxing.*
 import io.github.edsuns.chaoxing.model.Timing
 import io.github.edsuns.star.R
@@ -55,7 +59,8 @@ fun SignTimingBottomSheet(
             Column(
                 Modifier
                     .padding(16.dp)
-                    .height(360.dp)
+                    .padding(bottom = 32.dp)
+                    .heightIn(360.dp, 390.dp)
                     .fillMaxWidth()
             ) {
                 SignTimingSheetHeader(selectedTiming = selectedTiming)
@@ -71,8 +76,12 @@ fun SignTimingBottomSheet(
 
 @Composable
 fun SignTimingSheetHeader(selectedTiming: MutableState<MutableState<Timing>>) {
+    val typeDescription = if (selectedTiming.ref.type != Timing.Type.UNKNOWN)
+        selectedTiming.ref.type.description
+    else
+        stringResource(id = R.string.unknown_type)
     Text(
-        text = selectedTiming.ref.type.description,
+        text = typeDescription,
         color = MaterialTheme.colors.primary,
         style = MaterialTheme.typography.h6
     )
@@ -102,20 +111,29 @@ fun SignTimingSheetContent(
         state
     }
     val imageUri = remember { mutableStateOf<Uri?>(null) }
+    val selectedType = remember {
+        mutableStateOf(Timing.Type.NORMAL_OR_PHOTO)
+    }
+    val expanded = remember { mutableStateOf(false) }
+    val type =
+        if (selectedTiming.ref.type != Timing.Type.UNKNOWN) selectedTiming.ref.type else selectedType.value
     val (clickUiState, sendSign, clearError) = produceUiState(
         Repository,
         selectedTiming.ref,
         false
     ) {
         var result: Result<Boolean>? = null
-        when (selectedTiming.ref.type) {
+        // load type again
+        val timingType =
+            if (selectedTiming.ref.type != Timing.Type.UNKNOWN) selectedTiming.ref.type else selectedType.value
+        val timing = selectedTiming.ref.copy(timingType)
+        when (timingType) {
             Timing.Type.NORMAL_OR_PHOTO -> {
                 val uri = imageUri.value
                 if (uri != null) {
                     val inputStream = context.contentResolver.openInputStream(uri)
                     result = onTimingClicked(
-                        selectedTiming.ref,
-                        Repository.TimingConfig(imageInput = inputStream)
+                        timing, Repository.TimingConfig(imageInput = inputStream)
                     )
                 }
             }
@@ -132,7 +150,8 @@ fun SignTimingSheetContent(
                     }
                     if (inputStream != null && qrcode != null) {
                         val enc = qrcode.substring(qrcode.lastIndexOf("enc=") + 4)
-                        result = onTimingClicked(selectedTiming.ref, Repository.TimingConfig(enc))
+                        result =
+                            onTimingClicked(timing, Repository.TimingConfig(enc))
                     }
                 }
             }
@@ -147,10 +166,10 @@ fun SignTimingSheetContent(
                 SettingsStorage.address = locationState.address
                 SettingsStorage.latitude = locationState.latitude
                 SettingsStorage.longitude = locationState.longitude
-                result = onTimingClicked(selectedTiming.ref, config)
+                result = onTimingClicked(timing, config)
             }
             Timing.Type.GESTURE -> {
-                result = onTimingClicked(selectedTiming.ref)
+                result = onTimingClicked(timing)
             }
             else -> {
                 // do nothing
@@ -170,22 +189,33 @@ fun SignTimingSheetContent(
         }
         return@produceUiState result ?: Result.Success(false)
     }
-    val signed = selectedTiming.ref.state == Timing.State.SUCCESS
+    val signed =
+        selectedTiming.ref.state == Timing.State.SUCCESS || selectedTiming.ref.state == Timing.State.EXPIRED
     val signButtonText =
-        if (signed) stringResource(id = R.string.signed) else stringResource(id = R.string.sign)
+        when (selectedTiming.ref.state) {
+            Timing.State.SUCCESS -> stringResource(id = R.string.signed)
+            Timing.State.EXPIRED -> stringResource(id = R.string.expired)
+            else -> stringResource(id = R.string.sign)
+        }
+    if (!signed && selectedTiming.ref.type == Timing.Type.UNKNOWN) {
+        TimingDropDownMenu(selected = selectedType, expanded = expanded)
+        Spacer(modifier = Modifier.height(12.dp))
+    }
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .height(260.dp)
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         var noBlank = true
         if (!signed) {
-            if (selectedTiming.ref.needImage) {
+            if (type.needImage) {
                 noBlank = imageUri.value != null
                 ImageRequestBox(imageUri)
                 Spacer(modifier = Modifier.height(20.dp))
             }
-            if (selectedTiming.ref.type == Timing.Type.LOCATION) {
+            if (type == Timing.Type.LOCATION) {
                 noBlank =
                     (locationState.address.isNotBlank()
                             && locationState.longitude.isNotBlank()
@@ -203,7 +233,7 @@ fun SignTimingSheetContent(
                 },
                 enabled = !signed && noBlank
             ) {
-                Text(text = signButtonText)
+                Text(text = signButtonText, modifier = Modifier.padding(2.dp))
             }
         }
     }
@@ -325,4 +355,94 @@ fun DefaultTextField(
             imeAction = imeAction
         )
     )
+}
+
+@Composable
+fun TimingDropDownMenu(selected: MutableState<Timing.Type>, expanded: MutableState<Boolean>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentSize(Alignment.TopStart)
+            .padding(top = 10.dp)
+            .border(
+                border = BorderStroke(0.5.dp, MaterialTheme.colors.primary),
+                shape = MaterialTheme.shapes.small
+            )
+            .clickable(
+                onClick = {
+                    expanded.value = !expanded.value
+                },
+            ),
+    ) {
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+
+            val (label, iconView) = createRefs()
+
+            Text(
+                text = selected.value.description,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp)
+                    .constrainAs(label) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(iconView.start)
+                    }
+            )
+
+            val displayIcon: Painter = painterResource(
+                id = R.drawable.ic_arrow_drop_down_24
+            )
+
+            Icon(
+                painter = displayIcon,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(20.dp, 20.dp)
+                    .constrainAs(iconView) {
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                    },
+                tint = MaterialTheme.colors.onSurface
+            )
+
+            DropdownMenu(
+                expanded = expanded.value,
+                onDismissRequest = { expanded.value = false },
+            ) {
+                val types = listOf(
+                    Timing.Type.NORMAL_OR_PHOTO,
+                    Timing.Type.QRCODE,
+                    Timing.Type.LOCATION,
+                    Timing.Type.GESTURE
+                )
+                types.forEach { type ->
+                    val isSelected = type == selected.value
+                    val style = if (isSelected) {
+                        MaterialTheme.typography.body1.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colors.primary
+                        )
+                    } else {
+                        MaterialTheme.typography.body1.copy(
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colors.onSurface
+                        )
+                    }
+                    DropdownMenuItem(onClick = {
+                        selected.value = type
+                        expanded.value = false
+                    }) {
+                        Text(text = type.description, style = style)
+                    }
+                }
+            }
+        }
+    }
 }
