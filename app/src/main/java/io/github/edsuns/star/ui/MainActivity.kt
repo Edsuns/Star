@@ -25,11 +25,11 @@ import kotlinx.coroutines.withContext
 /**
  * Created by Edsuns@qq.com on 2021/6/23.
  */
+@ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
-    @ExperimentalMaterialApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ioScope.launch {

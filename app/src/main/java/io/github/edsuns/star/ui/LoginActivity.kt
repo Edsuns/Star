@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.material.ExperimentalMaterialApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import io.github.edsuns.star.Screen
 import io.github.edsuns.star.ui.composable.Login
@@ -14,6 +15,7 @@ import io.github.edsuns.star.ui.theme.ApplicationTheme
 /**
  * Created by Edsuns@qq.com on 2021/6/26.
  */
+@ExperimentalMaterialApi
 class LoginActivity : ComponentActivity() {
 
     private val viewModel: LoginViewModel by viewModels()
