@@ -47,7 +47,7 @@ fun ContentResolver.getBitmap(uri: Uri): Bitmap {
     }
 }
 
-@Throws(NotFoundException::class)
+@Throws(NotFoundException::class, FormatException::class)
 fun decodeQRCode(contentResolver: ContentResolver, uri: Uri): String? {
     val bm = contentResolver.getBitmap(uri)
     var decoded: String? = null
@@ -59,8 +59,6 @@ fun decodeQRCode(contentResolver: ContentResolver, uri: Uri): String? {
         val result = reader.decode(bitmap)
         decoded = result.text
     } catch (e: ChecksumException) {
-        e.printStackTrace()
-    } catch (e: FormatException) {
         e.printStackTrace()
     }
     return decoded

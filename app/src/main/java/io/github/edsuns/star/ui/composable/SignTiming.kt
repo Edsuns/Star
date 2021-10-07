@@ -154,18 +154,17 @@ fun SignTimingSheetContent(
             Timing.Type.QRCODE -> {
                 val uri = imageUri.value
                 if (uri != null) {
-                    val inputStream = context.contentResolver.openInputStream(uri)
                     val qrcode = try {
                         decodeQRCode(context.contentResolver, uri)
-                    } catch (err: NotFoundException) {
-                        Toast.makeText(context, R.string.qrcode_not_found, Toast.LENGTH_SHORT)
-                            .show()
+                    } catch (err: Exception) {
                         null
                     }
-                    if (inputStream != null && qrcode != null) {
+                    if (qrcode != null) {
                         val enc = qrcode.substring(qrcode.lastIndexOf("enc=") + 4)
-                        result =
-                            onTimingClicked(timing, Repository.TimingConfig(enc))
+                        result = onTimingClicked(timing, Repository.TimingConfig(enc))
+                    } else {
+                        Toast.makeText(context, R.string.qrcode_not_found, Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
             }
