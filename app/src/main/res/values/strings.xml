@@ -27,4 +27,5 @@
     <string name="failed_to_sign">Failed to sign!</string>
     <string name="unknown_type">Unknown type</string>
     <string name="expired">Expired</string>
+    <string name="require_storage_permission">Storage permission is required!</string>
 </resources>

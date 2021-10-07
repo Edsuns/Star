@@ -2,10 +2,10 @@ package io.github.edsuns.star.ext
 
 import android.content.ContentResolver
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import android.provider.MediaStore
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
@@ -40,7 +40,7 @@ fun Bitmap.getPixels(contentResolver: ContentResolver, uri: Uri): IntArray {
 
 fun ContentResolver.getBitmap(uri: Uri): Bitmap {
     return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-        MediaStore.Images.Media.getBitmap(this, uri)
+        BitmapFactory.decodeStream(openInputStream(uri))
     } else {
         val source = ImageDecoder.createSource(this, uri)
         ImageDecoder.decodeBitmap(source)

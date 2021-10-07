@@ -1,8 +1,9 @@
 package io.github.edsuns.star.ui.composable
 
-import android.graphics.Bitmap
+import android.Manifest
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
@@ -33,6 +34,7 @@ import io.github.edsuns.star.Repository
 import io.github.edsuns.star.ext.*
 import io.github.edsuns.star.local.SettingsStorage
 import io.github.edsuns.star.util.Result
+import io.github.edsuns.star.util.hasPermission
 import io.github.edsuns.star.util.produceUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -103,6 +105,18 @@ fun SignTimingSheetContent(
     coroutineScope: CoroutineScope
 ) {
     val context = LocalContext.current
+
+    val hasReadStoragePermission =
+        remember { mutableStateOf(context.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasReadStoragePermission.value = isGranted
+        if (!isGranted) {
+            Toast.makeText(context, R.string.require_storage_permission, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val locationState = remember {
         val state = LocationState()
         state.address = SettingsStorage.address ?: "-1"
@@ -211,8 +225,8 @@ fun SignTimingSheetContent(
         var noBlank = true
         if (!signed) {
             if (type.needImage) {
-                noBlank = imageUri.value != null
-                ImageRequestBox(imageUri)
+                noBlank = imageUri.value != null && hasReadStoragePermission.value
+                ImageRequestBox(hasReadStoragePermission, permissionLauncher, imageUri)
                 Spacer(modifier = Modifier.height(20.dp))
             }
             if (type == Timing.Type.LOCATION) {
@@ -240,28 +254,32 @@ fun SignTimingSheetContent(
 }
 
 @Composable
-fun ImageRequestBox(imageUri: MutableState<Uri?>) {
-    val bitmap = remember {
-        mutableStateOf<Bitmap?>(null)
-    }
+fun ImageRequestBox(
+    hasReadStoragePermission: State<Boolean>,
+    permissionLauncher: ManagedActivityResultLauncher<String, Boolean>,
+    imageUri: MutableState<Uri?>
+) {
+    val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { imageUri.value = it }// only remember success ActivityResult
+        // only process success result
+        uri?.let {
+            if (!context.hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            imageUri.value = it
+        }
     }
     val pickImageHandler = {
         launcher.launch("image/*")
     }
 
-    imageUri.value?.let {
-        val context = LocalContext.current
-        bitmap.value = context.contentResolver.getBitmap(it)
-    }
-
     Column {
         Button(onClick = pickImageHandler) {
-            val image = bitmap.value
-            if (image != null) {
+            val uri = imageUri.value
+            if (uri != null && hasReadStoragePermission.value) {
+                val image = context.contentResolver.getBitmap(uri)
                 Image(
                     bitmap = image.asImageBitmap(),
                     contentDescription = null,
