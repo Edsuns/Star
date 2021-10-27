@@ -200,10 +200,16 @@ fun ActiveTimingList(
 
             val timing = timingState.value
             val isChecked = timing.state == Timing.State.SUCCESS
-            val answerBackgroundColor = if (isChecked) {
-                MaterialTheme.colors.primary.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colors.background
+            val answerBackgroundColor = when (timing.state) {
+                Timing.State.SUCCESS -> {
+                    MaterialTheme.colors.primary.copy(alpha = 0.12f)
+                }
+                Timing.State.EXPIRED -> {
+                    MaterialTheme.colors.error.copy(alpha = 0.12f)
+                }
+                else -> {
+                    MaterialTheme.colors.background
+                }
             }
             val typeDescription = if (timing.type != Timing.Type.UNKNOWN) {
                 timing.type.description
