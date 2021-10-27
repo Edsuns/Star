@@ -119,9 +119,9 @@ fun SignTimingSheetContent(
 
     val locationState = remember {
         val state = LocationState()
-        state.address = SettingsStorage.address ?: "-1"
-        state.longitude = SettingsStorage.longitude ?: "-1"
-        state.latitude = SettingsStorage.latitude ?: "-1"
+        state.address = SettingsStorage.address ?: ""
+        state.longitude = SettingsStorage.longitude ?: ""
+        state.latitude = SettingsStorage.latitude ?: ""
         state
     }
     val imageUri = remember { mutableStateOf<Uri?>(null) }
