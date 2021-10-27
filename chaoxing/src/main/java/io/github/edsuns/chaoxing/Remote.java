@@ -367,7 +367,7 @@ final class Remote {
                 .cookies(cookies)
                 .data("puid", uid)
                 .data("_token", token)
-                .data("file", "photo.jpg", inputStream, "image/webp,image/*")
+                .data("file", "photo.jpg", inputStream, "application/octet-stream")
                 .execute();
         JSONObject object = new JSONObject(response.body());
         if (object.getBoolean("result")) {
