@@ -10,6 +10,8 @@
     <string name="back">返回</string>
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
+    <string name="checked">选中</string>
+    <string name="unchecked">未选中</string>
     <string name="about">关于</string>
     <string name="logout">退出登录</string>
     <string name="login_out_of_date">登陆状态已失效</string>
