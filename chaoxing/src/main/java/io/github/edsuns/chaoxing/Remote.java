@@ -58,6 +58,25 @@ final class Remote {
     }
 
     /**
+     * getName
+     *
+     * @param cookies saved cookies
+     * @return name, null if get failed
+     * @throws IOException IOException
+     */
+    static String getName(Map<String, String> cookies) throws IOException{
+        Document document = Jsoup.connect("https://i.mooc.chaoxing.com/space/index")
+                .cookies(cookies)
+                .followRedirects(false)
+                .get();
+        Elements elements = document.select("#space_nickname > p");
+        if (elements.size() == 1){
+            return elements.get(0).text();
+        }
+        return null;
+    }
+
+    /**
      * Validate login state
      *
      * @param cookies saved cookies
@@ -212,10 +231,11 @@ final class Remote {
     @Nullable
     static String photoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
         String objectId = uploadImage(cookies, inputStream);
+        String name = getName(cookies);
         Connection.Response response =
                 Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                         .cookies(cookies)
-                        .data("name", timing.course.name)
+                        .data("name", name != null ? name : timing.course.name)
                         .data("activeId", timing.activeId)
                         .data("address", "中国")
                         .data("uid", cookies.get("UID"))
@@ -245,10 +265,11 @@ final class Remote {
         if (timing.type != Timing.Type.QRCODE) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
+        String name = getName(cookies);
         Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                 .cookies(cookies)
                 .data("enc", enc)
-                .data("name", timing.course.name)
+                .data("name", name != null ? name : timing.course.name)
                 .data("activeId", timing.activeId)
                 .data("uid", cookies.get("UID"))
                 .data("clientip", "")
@@ -310,9 +331,10 @@ final class Remote {
         if (longitude == null) {
             longitude = "-1";
         }
+        String name = getName(cookies);
         Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                 .cookies(cookies)
-                .data("name", timing.course.name)
+                .data("name", name != null ? name : timing.course.name)
                 .data("activeId", timing.activeId)
                 .data("address", address)
                 .data("uid", cookies.get("UID"))
