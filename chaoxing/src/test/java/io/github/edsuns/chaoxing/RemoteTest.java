@@ -70,4 +70,10 @@ public class RemoteTest {
         }
         assertTrue(hasActive);
     }
+
+    @Test
+    public void getName() throws IOException {
+        String name = Remote.getName(cookies);
+        assertNotNull(name);
+    }
 }
