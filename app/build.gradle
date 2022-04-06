@@ -75,6 +75,7 @@ dependencies {
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines"
 
     implementation 'com.google.zxing:core:3.3.3'
+    implementation 'com.huawei.hms:scanplus:2.4.0.302'
 
     implementation(project(':chaoxing'))
 }
