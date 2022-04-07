@@ -9,6 +9,10 @@ import android.os.Build
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
+import com.huawei.hms.hmsscankit.ScanUtil
+import com.huawei.hms.ml.scan.HmsScan
+import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions
+import io.github.edsuns.star.App
 
 /**
  * Created by Edsuns@qq.com on 2021/07/07.
@@ -61,5 +65,32 @@ fun decodeQRCode(contentResolver: ContentResolver, uri: Uri): String? {
     } catch (e: ChecksumException) {
         e.printStackTrace()
     }
+    return decoded
+}
+
+
+fun decodeQRCodeByScanKit(contentResolver: ContentResolver, uri: Uri): String? {
+
+    /**
+     * Scan Kit 无法识别通过 ImageDecoder 获取的 Bitmap 中的二维码，
+     * 这里只好暂时使用传统的 BitmapFactory 了
+     */
+    val inputStream = contentResolver.openInputStream(uri)
+    val bitmap = BitmapFactory.decodeStream(inputStream)
+
+    val options = HmsScanAnalyzerOptions
+        .Creator()
+        .setHmsScanTypes(HmsScan.QRCODE_SCAN_TYPE)
+        .setPhotoMode(true)
+        .create()
+
+    val hmsScans = ScanUtil.decodeWithBitmap(App.instance.applicationContext, bitmap, options)
+
+    var decoded: String? = null
+
+    if (!hmsScans.isNullOrEmpty()) {
+        decoded = hmsScans[0].originalValue
+    }
+
     return decoded
 }

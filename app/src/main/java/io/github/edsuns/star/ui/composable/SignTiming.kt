@@ -155,7 +155,7 @@ fun SignTimingSheetContent(
                 val uri = imageUri.value
                 if (uri != null) {
                     val qrcode = try {
-                        decodeQRCode(context.contentResolver, uri)
+                        decodeQRCodeByScanKit(context.contentResolver, uri)
                     } catch (err: Exception) {
                         null
                     }
