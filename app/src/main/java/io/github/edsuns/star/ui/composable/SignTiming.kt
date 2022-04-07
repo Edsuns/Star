@@ -6,12 +6,16 @@ import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.EditLocation
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +31,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import com.google.zxing.*
 import io.github.edsuns.chaoxing.model.Timing
 import io.github.edsuns.star.R
 import io.github.edsuns.star.Repository
@@ -155,7 +158,7 @@ fun SignTimingSheetContent(
                 val uri = imageUri.value
                 if (uri != null) {
                     val qrcode = try {
-                        decodeQRCodeByScanKit(context.contentResolver, uri)
+                        decodeQRCodeByScanKit(context, uri)
                     } catch (err: Exception) {
                         null
                     }
