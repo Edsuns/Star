@@ -64,13 +64,13 @@ final class Remote {
      * @return name, null if get failed
      * @throws IOException IOException
      */
-    static String getName(Map<String, String> cookies) throws IOException{
+    static String getName(Map<String, String> cookies) throws IOException {
         Document document = Jsoup.connect("https://i.mooc.chaoxing.com/space/index")
                 .cookies(cookies)
                 .followRedirects(false)
                 .get();
         Elements elements = document.select("#space_nickname > p");
-        if (elements.size() == 1){
+        if (elements.size() == 1) {
             return elements.get(0).text();
         }
         return null;
@@ -220,6 +220,43 @@ final class Remote {
     }
 
     /**
+     * GestureTiming
+     *
+     * @param cookies cookies
+     * @param timing  timing
+     * @return true if success
+     * @throws IOException IOException
+     */
+    static boolean gestureTiming(Map<String, String> cookies, Timing timing) throws IOException {
+        if (timing.type != Timing.Type.GESTURE) {
+            throw new IllegalArgumentException("Mismatched Timing!");
+        }
+        Document document =
+                Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/signIn")
+                        .cookies(cookies)
+                        .data("courseId", timing.course.id)
+                        .data("classId", timing.course.classId)
+                        .data("activeId", timing.activeId)
+                        .get();
+        return document.title().contains("签到成功");
+    }
+
+    private static void preSign(Map<String, String> cookies, Timing timing) throws IOException {
+        Connection.Response resp = Jsoup.connect("https://mobilelearn.chaoxing.com/newsign/preSign")
+                .cookies(cookies)
+                .data("activePrimaryId", timing.activeId)
+                .data("general", "1")
+                .data("sys", "1")
+                .data("ls", "1")
+                .data("appType", "15")
+                .data("ut", "s")
+                .execute();
+        if (resp.statusCode() != HttpURLConnection.HTTP_OK) {
+            throw new IOException("pre-sign failed");
+        }
+    }
+
+    /**
      * PhotoTiming
      *
      * @param cookies     cookies
@@ -230,6 +267,7 @@ final class Remote {
      */
     @Nullable
     static String photoTiming(Map<String, String> cookies, Timing timing, InputStream inputStream) throws IOException {
+        preSign(cookies, timing);
         String objectId = uploadImage(cookies, inputStream);
         String name = getName(cookies);
         Connection.Response response =
@@ -265,6 +303,7 @@ final class Remote {
         if (timing.type != Timing.Type.QRCODE) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
+        preSign(cookies, timing);
         String name = getName(cookies);
         Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                 .cookies(cookies)
@@ -284,28 +323,6 @@ final class Remote {
             return text;// example: {"name": "", "date": "01-01 16:26", "status": "success"}
         }
         return null;
-    }
-
-    /**
-     * GestureTiming
-     *
-     * @param cookies cookies
-     * @param timing  timing
-     * @return true if success
-     * @throws IOException IOException
-     */
-    static boolean gestureTiming(Map<String, String> cookies, Timing timing) throws IOException {
-        if (timing.type != Timing.Type.GESTURE) {
-            throw new IllegalArgumentException("Mismatched Timing!");
-        }
-        Document document =
-                Jsoup.connect("https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/signIn")
-                        .cookies(cookies)
-                        .data("courseId", timing.course.id)
-                        .data("classId", timing.course.classId)
-                        .data("activeId", timing.activeId)
-                        .get();
-        return document.title().contains("签到成功");
     }
 
     /**
@@ -331,6 +348,7 @@ final class Remote {
         if (longitude == null) {
             longitude = "-1";
         }
+        preSign(cookies, timing);
         String name = getName(cookies);
         Connection.Response response = Jsoup.connect("https://mobilelearn.chaoxing.com/pptSign/stuSignajax")
                 .cookies(cookies)
