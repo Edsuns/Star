@@ -81,8 +81,8 @@ public class CXing {
         return Remote.qrcodeTiming(getCookies(), timing, enc) != null;
     }
 
-    public boolean gestureTiming(Timing timing) throws IOException {
-        return Remote.gestureTiming(getCookies(), timing);
+    public boolean gestureOrCodeTiming(Timing timing) throws IOException {
+        return Remote.gestureOrCodeTiming(getCookies(), timing);
     }
 
     public boolean locationTiming(Timing timing, String address,

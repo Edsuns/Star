@@ -6,7 +6,10 @@ import io.github.edsuns.star.ext.logE
 import io.github.edsuns.star.local.FileCookieStorage
 import io.github.edsuns.star.local.SettingsStorage
 import io.github.edsuns.star.util.Result
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.io.InputStream
 
@@ -73,8 +76,8 @@ object Repository {
                 return@withContext Result.Success(false)
             }
             // timings doesn't need config
-            if (timing.type == Timing.Type.GESTURE) {
-                return@withContext Result.Success(xing!!.gestureTiming(timing))
+            if (timing.type == Timing.Type.GESTURE || timing.type == Timing.Type.CODE) {
+                return@withContext Result.Success(xing!!.gestureOrCodeTiming(timing))
             }
 
             // timings need config

@@ -200,15 +200,15 @@ final class Remote {
     }
 
     /**
-     * GestureTiming
+     * GestureOrCodeTiming
      *
      * @param cookies cookies
      * @param timing  timing
      * @return true if success
      * @throws IOException IOException
      */
-    static boolean gestureTiming(Map<String, String> cookies, Timing timing) throws IOException {
-        if (timing.type != Timing.Type.GESTURE) {
+    static boolean gestureOrCodeTiming(Map<String, String> cookies, Timing timing) throws IOException {
+        if (timing.type != Timing.Type.GESTURE && timing.type != Timing.Type.CODE) {
             throw new IllegalArgumentException("Mismatched Timing!");
         }
         Document document =

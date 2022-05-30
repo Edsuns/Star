@@ -184,7 +184,7 @@ fun SignTimingSheetContent(
                 SettingsStorage.longitude = locationState.longitude
                 result = onTimingClicked(timing, config)
             }
-            Timing.Type.GESTURE -> {
+            Timing.Type.GESTURE, Timing.Type.CODE -> {
                 result = onTimingClicked(timing)
             }
             else -> {
@@ -440,7 +440,8 @@ fun TimingDropDownMenu(selected: MutableState<Timing.Type>, expanded: MutableSta
                     Timing.Type.NORMAL_OR_PHOTO,
                     Timing.Type.QRCODE,
                     Timing.Type.LOCATION,
-                    Timing.Type.GESTURE
+                    Timing.Type.GESTURE,
+                    Timing.Type.CODE
                 )
                 types.forEach { type ->
                     val isSelected = type == selected.value
