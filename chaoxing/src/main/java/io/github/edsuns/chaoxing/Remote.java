@@ -1,5 +1,6 @@
 package io.github.edsuns.chaoxing;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -11,15 +12,9 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -144,56 +139,41 @@ final class Remote {
     /**
      * Fetch active timing list
      *
-     * @param cookies cookies
-     * @param course  target
+     * @param cookies       cookies
+     * @param course        target
+     * @param includesEnded true to include ended timings
      * @return a list of {@link Timing}
      * @throws IOException IOException
      */
-    static List<Timing> getActiveTimingList(Map<String, String> cookies, Course course) throws IOException {
-        Document document =
-                Jsoup.connect("https://mobilelearn.chaoxing.com/widget/pcpick/stu/index")
+    static List<Timing> getActiveTimingList(Map<String, String> cookies,
+                                            Course course, boolean includesEnded) throws IOException {
+        String json =
+                Jsoup.connect("https://mobilelearn.chaoxing.com/v2/apis/active/student/activelist")
+                        .ignoreContentType(true)
                         .cookies(cookies)
+                        .data("showNotStartedActive", "0")
+                        .data("activeType", "2")// activeType == 2 是签到活动
                         .data("courseId", course.id)
-                        .data("jclassId", course.classId)
-                        .get();
-        Elements startElements = document.select("#startList>div>div:first-child");
-        Elements endElements = document.select("#endList>div>div:first-child");
-        Elements elements = new Elements(startElements.size() + endElements.size());
-        elements.addAll(startElements);
-        elements.addAll(endElements);
-        List<Timing> activeTimingList = new ArrayList<>();
-        for (Element element : elements) {
-            Elements taskName = element.select("dl a dd");
-            if (taskName.size() != 1 || !"签到".equals(taskName.get(0).text())) {
-                continue;
-            }
-            String onclick = element.attr("onclick");// activeDetail(4000001234567,2,null)
-            String activeId = onclick.substring(13, onclick.length() - 8);
+                        .data("classId", course.classId)
+                        .data("fid", "0")
+                        .get()
+                        .text();
+        JSONArray arr = new JSONObject(json).getJSONObject("data").getJSONArray("activeList");
+        List<Timing> result = new ArrayList<>();
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject a = arr.getJSONObject(i);
+            // 跳过非签到活动
+            if (a.getInt("type") != 2) continue;
+            // status == 1 是进行中的活动
+            if (!includesEnded && a.getInt("status") != 1) continue;
+            String activeId = a.getString("id");
             Timing timing = new Timing(course, activeId);
-            timing.time = parseDate(element.select("p:last-child>span").text()).getTime();
-            timing.type = Timing.Type.valueFrom(element.select("div>a:first-child").text());
-            if (endElements.contains(element)
-                    && System.currentTimeMillis() - timing.time > TimeUnit.DAYS.toMillis(2)) {
-                continue;
-            }
             timing.state = getTimingState(cookies, course, activeId);
-            activeTimingList.add(timing);
+            timing.type = Timing.Type.valueFrom(a.getString("nameOne"));
+            timing.time = a.getLong("startTime");
+            result.add(timing);
         }
-        return activeTimingList;
-    }
-
-    private static Date parseDate(String text) {
-        final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA);
-        try {
-            text = Calendar.getInstance(Locale.CHINA).get(Calendar.YEAR) + "-" + text;
-            return format.parse(text);
-        } catch (ParseException e) {
-            try {
-                return format.parse(text);
-            } catch (ParseException ignored) {
-            }
-        }
-        return new Date(0L);
+        return result;
     }
 
     /**

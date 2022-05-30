@@ -1,5 +1,9 @@
 package io.github.edsuns.chaoxing;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 
 import java.io.IOException;
@@ -9,10 +13,6 @@ import java.util.Properties;
 
 import io.github.edsuns.chaoxing.model.Course;
 import io.github.edsuns.chaoxing.model.Timing;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Edsuns@qq.com on 2021/6/23.
@@ -59,7 +59,7 @@ public class RemoteTest {
         boolean hasActive = false;
         outer:
         for (Course course : allCourses) {
-            List<Timing> activeTimingList = Remote.getActiveTimingList(cookies, course);
+            List<Timing> activeTimingList = Remote.getActiveTimingList(cookies, course, false);
             for (Timing timing : activeTimingList) {
                 if (timing.state != Timing.State.UNKNOWN
                         && timing.type != Timing.Type.UNKNOWN) {

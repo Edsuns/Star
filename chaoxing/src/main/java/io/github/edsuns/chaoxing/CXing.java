@@ -63,7 +63,11 @@ public class CXing {
     }
 
     public List<Timing> getActiveTimingList(Course course) throws IOException {
-        return Remote.getActiveTimingList(getCookies(), course);
+        return getActiveTimingList(course, false);
+    }
+
+    public List<Timing> getActiveTimingList(Course course, boolean includesEnded) throws IOException {
+        return Remote.getActiveTimingList(getCookies(), course, includesEnded);
     }
 
     public boolean normalOrPhotoTiming(Timing timing, PhotoProvider photoProvider) throws IOException {
