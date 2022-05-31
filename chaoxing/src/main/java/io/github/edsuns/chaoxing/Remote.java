@@ -166,7 +166,7 @@ final class Remote {
             if (a.getInt("type") != 2) continue;
             // status == 1 是进行中的活动
             if (!includesEnded && a.getInt("status") != 1) continue;
-            String activeId = a.getString("id");
+            String activeId = a.optString("id");
             Timing timing = new Timing(course, activeId);
             timing.state = getTimingState(cookies, course, activeId);
             timing.type = Timing.Type.valueFrom(a.getString("nameOne"));
