@@ -55,7 +55,7 @@ object Repository {
             val allCourses = xing!!.allCourses
             val taskList = mutableListOf<Deferred<List<Timing>>>()
             for (course in allCourses) {
-                taskList.add(async { xing!!.getActiveTimingList(course) })
+                taskList.add(async { xing!!.getActiveTimingList(course, true) })
             }
             for (task in taskList) {
                 activeTimingList.addAll(task.await())

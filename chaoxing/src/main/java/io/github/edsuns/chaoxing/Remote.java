@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -136,6 +137,8 @@ final class Remote {
         return Timing.State.valueFrom(elements.get(0).text());
     }
 
+    static final long PERIOD = TimeUnit.DAYS.toMillis(1);
+
     /**
      * Fetch active timing list
      *
@@ -166,11 +169,14 @@ final class Remote {
             if (a.getInt("type") != 2) continue;
             // status == 1 是进行中的活动
             if (!includesEnded && a.getInt("status") != 1) continue;
+            // TODO: figure out a better way to improve the request performance
+            long startTime = a.getLong("startTime");
+            if (System.currentTimeMillis() - startTime > PERIOD) continue;
             String activeId = a.optString("id");
             Timing timing = new Timing(course, activeId);
             timing.state = getTimingState(cookies, course, activeId);
             timing.type = Timing.Type.valueFrom(a.getString("nameOne"));
-            timing.time = a.getLong("startTime");
+            timing.time = startTime;
             result.add(timing);
         }
         return result;
